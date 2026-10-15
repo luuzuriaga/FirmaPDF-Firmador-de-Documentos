@@ -1,0 +1,6 @@
+{
+  "name": "FirmaPDF - Firmador de Documentos con 3 Firmas",
+  "description": "Carga tu documento PDF, añade y posiciona 3 firmas digitales (dibujadas, texto o imagen) con sellos opcionales y descárgalo listo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
