@@ -91,23 +91,13 @@ const SLOTS: SignatureSlot[] = [
   },
   {
     obra: 'valcer',
-    title: 'Valcer · Firma 1',
+    title: 'Valcer · Firma',
     name: 'Ing. Miguel A. Rojas',
     role: 'Residente de Obra · Valcer',
     showDetails: true,
     textValue: 'Miguel A. Rojas',
     fontFamily: 'Dancing Script',
     color: '#0369a1',
-  },
-  {
-    obra: 'valcer',
-    title: 'Valcer · Firma 2',
-    name: 'Ing. Patricia C. Huamán',
-    role: 'Supervisor de Obra · Valcer',
-    showDetails: true,
-    textValue: 'Patricia C. Huamán',
-    fontFamily: 'Caveat',
-    color: '#0f172a',
   },
 ];
 
