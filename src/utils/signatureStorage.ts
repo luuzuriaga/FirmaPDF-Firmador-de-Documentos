@@ -14,7 +14,10 @@ const KEY = 'firmas';
 /** First version kept the preset signatures' content in localStorage, by id */
 const LEGACY_KEY = 'firmapdf:firmas:v1';
 
-type SavedSignatory = Omit<SignatureConfig['signatory'], 'date'>;
+/** Placeholder signatures from earlier versions, replaced by real ones */
+const TEST_SIGNATURES = ['Miguel A. Rojas', 'Patricia C. Huamán'];
+
+type SavedSignatory =Omit<SignatureConfig['signatory'], 'date'>;
 type SavedSignature = Omit<SignatureConfig, 'signatory'> & {
   signatory: SavedSignatory;
 };
@@ -68,7 +71,7 @@ function applyLegacy(presets: SignatureConfig[]): SignatureConfig[] {
   }
   return presets.map((sig) => {
     const s = saved[sig.id];
-    if (!s) return sig;
+    if (!s || TEST_SIGNATURES.includes(s.textValue)) return sig;
     return {
       ...sig,
       type: s.type,
@@ -104,7 +107,17 @@ export async function loadSignatures(
   if (!Array.isArray(saved)) return applyLegacy(presets);
   // Always today's date: only identity fields are remembered
   const today = new Date().toISOString().split('T')[0];
-  return saved.map((s) => ({ ...s, signatory: { ...s.signatory, date: today } }));
+  return saved.map((s) => {
+    const preset = presets.find((p) => p.id === s.id && p.obra === s.obra);
+    // Replace the typed test signatures the app used to ship with
+    if (preset && TEST_SIGNATURES.includes(s.textValue)) return preset;
+    return {
+      ...s,
+      // Keep the local image path in sync with the presets
+      imagePath: preset ? preset.imagePath : s.imagePath,
+      signatory: { ...s.signatory, date: today },
+    };
+  });
 }
 
 /** Resolves false when the browser refused to store them */

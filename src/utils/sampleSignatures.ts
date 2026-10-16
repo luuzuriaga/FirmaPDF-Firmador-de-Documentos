@@ -92,13 +92,11 @@ const SLOTS: SignatureSlot[] = [
   },
   {
     obra: 'valcer',
-    title: 'Valcer · Firma',
-    name: 'Ing. Miguel A. Rojas',
-    role: 'Residente de Obra · Valcer',
+    title: 'Valcer · Gerencia',
+    name: '',
+    role: 'Gerencia',
     showDetails: true,
-    textValue: 'Miguel A. Rojas',
-    fontFamily: 'Dancing Script',
-    color: '#0369a1',
+    imagePath: '/firmas/valcer/sello_firma_gerencia.png',
   },
 ];
 
