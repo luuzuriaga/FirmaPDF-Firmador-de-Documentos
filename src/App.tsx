@@ -318,7 +318,7 @@ export default function App() {
 
         <nav
           aria-label="Progreso"
-          className="hidden md:flex items-center gap-3 text-sm whitespace-nowrap"
+          className="hidden xl:flex items-center gap-3 text-sm whitespace-nowrap"
         >
           {STEPS.map((label, i) => {
             const step = i + 1;

@@ -13,7 +13,21 @@ import {
   FileText,
 } from 'lucide-react';
 import { SignatureConfig } from '../types/pdf';
-import { renderPdfPageToCanvas } from '../utils/pdfService';
+import {
+  renderCompositeSignaturePng,
+  renderPdfPageToCanvas,
+} from '../utils/pdfService';
+
+/** Changes whenever what a signature looks like changes (not its position) */
+function appearanceKey(sig: SignatureConfig): string {
+  return JSON.stringify([
+    sig.dataUrl ? [sig.dataUrl.length, sig.dataUrl.slice(-64)] : null,
+    sig.textValue,
+    sig.fontFamily,
+    sig.color,
+    sig.signatory,
+  ]);
+}
 
 interface PdfPlacementCanvasProps {
   pdfBytes: Uint8Array | null;
@@ -46,6 +60,35 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
     width: number;
     height: number;
   }>({ width: 680, height: 960 });
+
+  // Each stamp is previewed with the exact image that goes into the PDF, so
+  // what is placed here is what gets stamped
+  const [stampPreviews, setStampPreviews] = useState<
+    Record<number, { key: string; url: string }>
+  >({});
+  useEffect(() => {
+    let cancelled = false;
+    for (const sig of signatures) {
+      if (!sig.dataUrl && !sig.textValue) continue;
+      const key = appearanceKey(sig);
+      if (stampPreviews[sig.id]?.key === key) continue;
+      renderCompositeSignaturePng(sig)
+        .then(({ dataUrl }) => {
+          if (cancelled) return;
+          setStampPreviews((prev) => ({
+            ...prev,
+            [sig.id]: { key, url: dataUrl },
+          }));
+        })
+        .catch(() => {
+          // Keep showing the raw image
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signatures]);
 
   // Dragging state
   const [draggingSigId, setDraggingSigId] = useState<number | null>(null);
@@ -296,9 +339,6 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
             const sigWidthPx = (sig.widthPercent / 100) * renderDimensions.width;
             const sigLeftPx = (sig.xPercent / 100) * renderDimensions.width;
             const sigTopPx = (sig.yPercent / 100) * renderDimensions.height;
-            // Small stamps (e.g. on phones) show just the signature, without
-            // the title bar
-            const compact = sigWidthPx < 140;
 
             const badgeColorMap: Record<number, { border: string; bg: string; text: string }> = {
               1: { border: 'border-blue-600', bg: 'bg-blue-600', text: 'text-blue-700' },
@@ -328,119 +368,43 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                   width: `${sigWidthPx}px`,
                 }}
               >
-                {/* Stamp Card Frame */}
+                {/* Label and quick actions, floating above the stamp */}
                 <div
-                  className={`relative border border-dashed rounded-md text-center overflow-hidden transition-colors ${
-                    isSelected
-                      ? 'border-blue-500'
-                      : 'border-transparent group-hover:border-blue-300'
-                  } ${
-                    compact ? 'p-0.5' : 'p-2'
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className={`absolute bottom-full left-0 mb-1 items-center gap-1 px-1.5 py-0.5 bg-white/95 border border-slate-200 rounded-md shadow-xs text-[10px] whitespace-nowrap ${
+                    isSelected ? 'flex' : 'hidden group-hover:flex'
                   }`}
                 >
-                  {/* Top Bar with Badge & Quick Actions */}
-                  <div
-                    className={`items-center justify-between gap-1 px-1 py-0.5 mb-1 bg-white/90 rounded text-[10px] ${
-                      compact ? 'hidden' : 'flex'
-                    }`}
+                  <span className={`w-2 h-2 rounded-full ${theme.bg} shrink-0`} />
+                  <span className="font-semibold text-slate-700 max-w-40 truncate">
+                    {sig.title}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenEditModal(sig);
+                    }}
+                    className="p-0.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800"
+                    title="Editar firma"
                   >
-                    <div className="flex items-center gap-1 font-semibold truncate text-slate-700">
-                      <span
-                        className={`w-2 h-2 rounded-full ${theme.bg} shrink-0`}
-                      />
-                      <span className="truncate">{sig.title}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenEditModal(sig);
-                        }}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 transition-colors"
-                        title="Modificar trazo o datos"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </button>
-                      <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing">
-                        <Move className="w-3 h-3" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Signature Visual (Draw / Type / Upload) */}
-                  <div
-                    className={`flex items-center justify-center ${
-                      compact ? '' : 'py-1 min-h-[44px]'
-                    }`}
-                  >
-                    {sig.dataUrl ? (
-                      <img
-                        src={sig.dataUrl}
-                        alt={sig.title}
-                        className={`${
-                          sig.signatory.showDetails ? 'h-10 w-auto' : 'w-full h-auto'
-                        } max-w-full object-contain mix-blend-multiply pointer-events-none select-none`}
-                      />
-                    ) : sig.textValue ? (
-                      <span
-                        className="text-xl sm:text-2xl leading-none select-none pointer-events-none"
-                        style={{
-                          fontFamily: sig.fontFamily || 'Dancing Script',
-                          color: sig.color || '#0f172a',
-                        }}
-                      >
-                        {sig.textValue}
-                      </span>
-                    ) : (
-                      <div className="text-xs italic text-slate-400 py-1">
-                        Firma no configurada
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Signatory Text Details at Bottom */}
-                  {sig.signatory.showDetails && (
-                    <div className="pt-1 mt-1 border-t border-slate-300/80 text-[9px] text-slate-700 font-sans leading-tight">
-                      {sig.signatory.name && (
-                        <div className="font-bold truncate text-slate-900">
-                          {sig.signatory.name}
-                        </div>
-                      )}
-                      {sig.signatory.role && (
-                        <div className="text-slate-500 truncate">
-                          {sig.signatory.role}
-                        </div>
-                      )}
-                      {sig.signatory.date && (
-                        <div className="text-slate-400 text-[8px] truncate mt-0.5">
-                          Fecha: {sig.signatory.date}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Quick Scale / Position Tool in Floating Popover when Selected */}
+                    <Edit3 className="w-3 h-3" />
+                  </button>
                   {isSelected && (
-                    <div
-                      onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white rounded-md px-2.5 py-1 text-[10px] flex items-center gap-2 shadow-lg whitespace-nowrap z-40"
-                    >
-                      <span>Ancho: {sig.widthPercent}%</span>
+                    <>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onUpdateSignature({
                             ...sig,
-                            widthPercent: Math.max(sig.widthPercent - 4, 12),
+                            widthPercent: Math.max(sig.widthPercent - 2, 10),
                           });
                         }}
-                        className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
+                        className="px-1 hover:bg-slate-100 rounded text-slate-600"
                         title="Reducir tamaño"
                       >
-                        -
+                        −
                       </button>
                       <button
                         type="button"
@@ -448,18 +412,37 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                           e.stopPropagation();
                           onUpdateSignature({
                             ...sig,
-                            widthPercent: Math.min(sig.widthPercent + 4, 60),
+                            widthPercent: Math.min(sig.widthPercent + 2, 60),
                           });
                         }}
-                        className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200"
+                        className="px-1 hover:bg-slate-100 rounded text-slate-600"
                         title="Aumentar tamaño"
                       >
                         +
                       </button>
-                      <span className="text-slate-500">|</span>
-                      <span>
-                        X: {sig.xPercent}% Y: {sig.yPercent}%
-                      </span>
+                    </>
+                  )}
+                  <Move className="w-3 h-3 text-slate-400" />
+                </div>
+
+                {/* The stamp exactly as it will be printed */}
+                <div
+                  className={`border border-dashed rounded-sm transition-colors ${
+                    isSelected
+                      ? 'border-blue-500'
+                      : 'border-transparent group-hover:border-blue-300'
+                  }`}
+                >
+                  {stampPreviews[sig.id] || sig.dataUrl ? (
+                    <img
+                      src={stampPreviews[sig.id]?.url ?? sig.dataUrl!}
+                      alt={sig.title}
+                      className="block w-full h-auto mix-blend-multiply pointer-events-none select-none"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="py-3 text-center text-xs italic text-slate-400 bg-white/80 rounded-sm">
+                      Firma no configurada
                     </div>
                   )}
                 </div>
