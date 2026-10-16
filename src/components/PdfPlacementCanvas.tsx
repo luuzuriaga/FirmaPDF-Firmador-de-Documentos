@@ -319,8 +319,8 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className={`absolute group cursor-move touch-none transition-shadow ${
                   isSelected
-                    ? `ring-2 ring-slate-200 shadow-lg z-30`
-                    : `hover:shadow-md z-20`
+                    ? `z-30`
+                    : `z-20`
                 } ${isDragging ? 'opacity-90 scale-[1.01]' : ''}`}
                 style={{
                   left: `${sigLeftPx}px`,
@@ -330,13 +330,17 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
               >
                 {/* Stamp Card Frame */}
                 <div
-                  className={`relative border border-slate-100 bg-white rounded-md shadow-xs text-center overflow-hidden ${
+                  className={`relative border border-dashed rounded-md text-center overflow-hidden transition-colors ${
+                    isSelected
+                      ? 'border-blue-500'
+                      : 'border-transparent group-hover:border-blue-300'
+                  } ${
                     compact ? 'p-0.5' : 'p-2'
                   }`}
                 >
                   {/* Top Bar with Badge & Quick Actions */}
                   <div
-                    className={`items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100 text-[10px] ${
+                    className={`items-center justify-between gap-1 px-1 py-0.5 mb-1 bg-white/90 rounded text-[10px] ${
                       compact ? 'hidden' : 'flex'
                     }`}
                   >
@@ -377,7 +381,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                         alt={sig.title}
                         className={`${
                           sig.signatory.showDetails ? 'h-10 w-auto' : 'w-full h-auto'
-                        } max-w-full object-contain pointer-events-none select-none`}
+                        } max-w-full object-contain mix-blend-multiply pointer-events-none select-none`}
                       />
                     ) : sig.textValue ? (
                       <span

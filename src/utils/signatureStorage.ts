@@ -1,4 +1,4 @@
-import { Obra, SignatureConfig } from '../types/pdf';
+import { SignatureConfig } from '../types/pdf';
 
 /**
  * Keeps each user's own signatures (uploaded images, typed text, names,
@@ -11,7 +11,6 @@ import { Obra, SignatureConfig } from '../types/pdf';
 const DB_NAME = 'firmapdf';
 const STORE = 'kv';
 const KEY = 'firmas';
-const OBRAS_KEY = 'obras';
 /** First version kept the preset signatures' content in localStorage, by id */
 const LEGACY_KEY = 'firmapdf:firmas:v1';
 
@@ -108,7 +107,11 @@ export async function loadSignatures(
   if (!Array.isArray(saved)) return applyLegacy(presets);
   // Always today's date: only identity fields are remembered
   const today = new Date().toISOString().split('T')[0];
-  return saved.map((s) => {
+  // Obras could be deleted in an earlier version: restore their presets
+  const restored = presets.filter(
+    (p) => !saved!.some((s) => s.obra === p.obra || s.id === p.id)
+  );
+  return [...saved, ...restored].map((s) => {
     const preset = presets.find((p) => p.id === s.id && p.obra === s.obra);
     // Replace the typed test signatures the app used to ship with
     if (preset && TEST_SIGNATURES.includes(s.textValue)) return preset;
@@ -167,30 +170,3 @@ export async function saveSignatures(
   return true;
 }
 
-/** Obras saved in this browser, or the defaults when there are none */
-export async function loadObras(defaults: Obra[]): Promise<Obra[]> {
-  try {
-    const saved = await idbGet<Obra[]>(OBRAS_KEY);
-    if (Array.isArray(saved)) return saved;
-  } catch {
-    // IndexedDB unavailable: use the defaults
-  }
-  return defaults;
-}
-
-/** Resolves false when the browser refused to store them */
-export async function saveObras(obras: Obra[]): Promise<boolean> {
-  try {
-    const db = await openDb();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(obras, OBRAS_KEY);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}

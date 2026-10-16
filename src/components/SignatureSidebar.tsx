@@ -5,21 +5,18 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
-  Info,
   Plus,
   Signature,
   Sparkles,
   Trash2,
   UserRoundPen,
 } from 'lucide-react';
-import { Obra, ObraId, SignatureConfig } from '../types/pdf';
+import { OBRAS, ObraId, SignatureConfig } from '../types/pdf';
 
 interface SignatureSidebarProps {
   signatures: SignatureConfig[];
-  obras: Obra[];
   activeObra: ObraId;
   onChangeObra: (obra: ObraId) => void;
-  onRemoveObra: (obra: ObraId) => void;
   numPages: number;
   currentPage: number;
   selectedSignatureId: number | null;
@@ -49,10 +46,8 @@ function initials(label: string): string {
 
 export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   signatures,
-  obras,
   activeObra,
   onChangeObra,
-  onRemoveObra,
   numPages,
   currentPage,
   selectedSignatureId,
@@ -64,7 +59,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onAddSignature,
   onRemoveSignature,
 }) => {
-  const activeObraName = obras.find((o) => o.id === activeObra)?.name ?? '';
+  const activeObraName = OBRAS.find((o) => o.id === activeObra)?.name ?? '';
 
   return (
     <aside className="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-4 sm:gap-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs shrink-0">
@@ -99,8 +94,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
             onChange={(e) => onChangeObra(e.target.value)}
             className="w-full appearance-none pl-10 pr-10 py-2.5 text-sm font-medium text-slate-900 bg-white border border-slate-300 hover:border-slate-400 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 cursor-pointer"
           >
-            {obras.length === 0 && <option value="">Sin obras</option>}
-            {obras.map((obra) => (
+            {OBRAS.map((obra) => (
               <option key={obra.id} value={obra.id}>
                 {obra.name}
               </option>
@@ -109,19 +103,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
           <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        {activeObraName && (
-          <div className="mt-2 flex justify-end">
-            <button
-              type="button"
-              onClick={() => onRemoveObra(activeObra)}
-              title={`Eliminar la obra ${activeObraName}`}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Eliminar esta obra</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Signatures of the active obra */}
@@ -346,19 +327,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
           </div>
         )}
       </section>
-
-      {/* Hint */}
-      <div className="hidden lg:flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
-        <Info className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-blue-800">
-            Configura la firma y arrástrala al documento.
-          </p>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Una vez configurada, podrás posicionarla en el PDF.
-          </p>
-        </div>
-      </div>
 
     </aside>
   );

@@ -17,7 +17,7 @@ import {
   FileSignature,
   Check,
 } from 'lucide-react';
-import { DEFAULT_OBRAS, Obra, ObraId, SignatureConfig } from './types/pdf';
+import { OBRAS, ObraId, SignatureConfig } from './types/pdf';
 import {
   getPresetSignatures,
   groupSlot,
@@ -25,9 +25,7 @@ import {
   hasSignatureContent,
 } from './utils/sampleSignatures';
 import {
-  loadObras,
   loadSignatures,
-  saveObras,
   saveSignatures,
 } from './utils/signatureStorage';
 import { loadImageAsDataUrl } from './utils/imageUtils';
@@ -67,25 +65,18 @@ export default function App() {
   const [signatures, setSignatures] = useState<SignatureConfig[]>(
     getPresetSignatures
   );
-  const [obras, setObras] = useState<Obra[]>(DEFAULT_OBRAS);
   // Nothing is saved until the stored signatures are read, so the presets
   // never overwrite them
   const [signaturesLoaded, setSignaturesLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      loadSignatures(getPresetSignatures()),
-      loadObras(DEFAULT_OBRAS),
-    ]).then(([loaded, loadedObras]) => {
+    loadSignatures(getPresetSignatures()).then((loaded) => {
       if (cancelled) return;
       setSignatures(loaded);
-      setObras(loadedObras);
-      if (loadedObras.length > 0) {
-        const first = loadedObras[0].id;
-        setActiveObra(first);
-        setSelectedSignatureId(loaded.find((s) => s.obra === first)?.id ?? null);
-      }
+      setSelectedSignatureId(
+        loaded.find((s) => s.obra === OBRAS[0].id)?.id ?? null
+      );
       setSignaturesLoaded(true);
 
       // Load local signature images (public/firmas/) into empty slots; on
@@ -119,40 +110,17 @@ export default function App() {
     if (!signaturesLoaded) return;
     saveSignatures(signatures).then((ok) => setStorageFailed(!ok));
   }, [signatures, signaturesLoaded]);
-  useEffect(() => {
-    if (!signaturesLoaded) return;
-    saveObras(obras).then((ok) => setStorageFailed(!ok));
-  }, [obras, signaturesLoaded]);
 
   // Active obra: only its signatures are shown and stamped
-  const [activeObra, setActiveObra] = useState<ObraId>(DEFAULT_OBRAS[0].id);
+  const [activeObra, setActiveObra] = useState<ObraId>(OBRAS[0].id);
   const obraSignatures = signatures.filter((s) => s.obra === activeObra);
   const activeObraName =
-    obras.find((o) => o.id === activeObra)?.name ?? activeObra;
+    OBRAS.find((o) => o.id === activeObra)?.name ?? activeObra;
 
   const handleChangeObra = (obra: ObraId) => {
     setActiveObra(obra);
     const first = signatures.find((s) => s.obra === obra);
     setSelectedSignatureId(first ? first.id : null);
-  };
-
-  const handleRemoveObra = (obraId: ObraId) => {
-    const obra = obras.find((o) => o.id === obraId);
-    if (!obra) return;
-    if (
-      !window.confirm(
-        `¿Eliminar la obra "${obra.name}" y todas sus firmas?`
-      )
-    )
-      return;
-    const remaining = obras.filter((o) => o.id !== obraId);
-    setObras(remaining);
-    setSignatures((prev) => prev.filter((s) => s.obra !== obraId));
-    const next = remaining[0]?.id ?? '';
-    setActiveObra(next);
-    setSelectedSignatureId(
-      signatures.find((s) => s.obra === next)?.id ?? null
-    );
   };
 
   // Selected signature for highlighting
@@ -163,20 +131,6 @@ export default function App() {
   // Modal editing
   const [editingSignature, setEditingSignature] =
     useState<SignatureConfig | null>(null);
-
-  // Load the ORDEN DE COMPRA template as the sample document
-  const handleLoadSamplePdf = async () => {
-    setIsLoadingPdf(true);
-    try {
-      const res = await fetch('/plantilla-orden-de-compra.pdf');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      await handleFileLoaded(bytes, 'ORDEN DE COMPRA.pdf');
-    } catch (err) {
-      console.error('Error cargando PDF de muestra:', err);
-      setIsLoadingPdf(false);
-    }
-  };
 
   // Handle uploaded custom PDF file
   const handleFileLoaded = async (bytes: Uint8Array, fileName: string) => {
@@ -446,17 +400,7 @@ export default function App() {
                 className="hidden"
               />
             </label>
-          ) : (
-            <button
-              type="button"
-              onClick={handleLoadSamplePdf}
-              disabled={isLoadingPdf}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>Ver ejemplo</span>
-            </button>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -483,7 +427,6 @@ export default function App() {
           <div className="flex-1 flex items-center justify-center py-6">
             <UploadDropzone
               onFileLoaded={handleFileLoaded}
-              onLoadSample={handleLoadSamplePdf}
               isLoading={isLoadingPdf}
             />
           </div>
@@ -493,10 +436,8 @@ export default function App() {
             {/* Sidebar Controls */}
             <SignatureSidebar
               signatures={obraSignatures}
-              obras={obras}
               activeObra={activeObra}
               onChangeObra={handleChangeObra}
-              onRemoveObra={handleRemoveObra}
               numPages={numPages}
               currentPage={currentPage}
               selectedSignatureId={selectedSignatureId}

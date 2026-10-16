@@ -11,13 +11,11 @@ import {
 
 interface UploadDropzoneProps {
   onFileLoaded: (bytes: Uint8Array, fileName: string) => void;
-  onLoadSample: () => void;
   isLoading: boolean;
 }
 
 export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
   onFileLoaded,
-  onLoadSample,
   isLoading,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -110,17 +108,6 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             />
           </label>
 
-          <span className="text-xs text-slate-400 font-medium">o</span>
-
-          <button
-            type="button"
-            onClick={onLoadSample}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium rounded-lg transition-colors border border-slate-200 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-amber-600" />
-            <span>Probar con la ORDEN DE COMPRA de ejemplo</span>
-          </button>
         </div>
 
         {errorMessage && (

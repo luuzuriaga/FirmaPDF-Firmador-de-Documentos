@@ -14,10 +14,10 @@ export interface Obra {
   name: string;
 }
 
-/** Obras the app starts with; users can add or remove their own */
-export const DEFAULT_OBRAS: Obra[] = [
-  { id: 'tayamarca', name: 'Tayamarca' },
+/** The obras offered in the app, in the order they are listed */
+export const OBRAS: Obra[] = [
   { id: 'uchumarca', name: 'Uchumarca' },
+  { id: 'tayamarca', name: 'Tayamarca' },
   { id: 'huancabamba', name: 'Huancabamba' },
   { id: 'valcer', name: 'Valcer' },
 ];

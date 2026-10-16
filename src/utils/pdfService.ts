@@ -88,6 +88,41 @@ export async function renderPdfPageToCanvas(
 }
 
 /**
+ * Returns the image at the given size with its white paper background made
+ * transparent (scans saved without transparency, e.g. a photographed seal)
+ */
+function withoutWhiteBackground(
+  img: HTMLImageElement,
+  width: number,
+  height: number
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const px = data.data;
+  // Fully transparent from 245 up, fading in below it so edges stay smooth
+  const SOLID = 215;
+  const CLEAR = 245;
+  for (let i = 0; i < px.length; i += 4) {
+    const lightest = Math.min(px[i], px[i + 1], px[i + 2]);
+    if (lightest >= CLEAR) px[i + 3] = 0;
+    else if (lightest > SOLID) {
+      px[i + 3] = Math.round(
+        (px[i + 3] * (CLEAR - lightest)) / (CLEAR - SOLID)
+      );
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+  return canvas;
+}
+
+/**
  * Generates a unified high-resolution PNG representing the signature
  * (including handwritten/drawn/typed stroke plus optional signatory card info)
  */
@@ -128,9 +163,7 @@ export async function renderCompositeSignaturePng(
   ctx.scale(RENDER_SCALE, RENDER_SCALE);
   ctx.imageSmoothingQuality = 'high';
 
-  // Solid white background (no border) so the stamp covers what is underneath
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, baseWidth, baseHeight);
+  // Transparent background: the document shows through around the strokes
 
   // 1. Render the signature graphic or text
   if (img) {
@@ -147,7 +180,13 @@ export async function renderCompositeSignaturePng(
     const drawX = (baseWidth - drawW) / 2;
     const drawY = (sigAreaHeight - drawH) / 2;
 
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.drawImage(
+      withoutWhiteBackground(img, drawW * RENDER_SCALE, drawH * RENDER_SCALE),
+      drawX,
+      drawY,
+      drawW,
+      drawH
+    );
   } else if (sig.textValue) {
     // Render typed cursive signature
     const sigAreaHeight = hasDetails ? 140 : baseHeight;

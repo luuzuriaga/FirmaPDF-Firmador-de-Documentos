@@ -2,10 +2,11 @@ import { ObraId, SignatureConfig } from '../types/pdf';
 
 /**
  * Default placement of an obra's signatures, fitted to the ORDEN DE COMPRA
- * template: just below "CONSIDERACIONES" and left of the totals box
+ * template: in the blank space of the items table, ending just above the
+ * "SON:" line (76% of the height), left of the totals column
  * (which starts at ~65% of the page width)
  */
-export const GROUP_Y_PERCENT = 85;
+export const GROUP_Y_PERCENT = 64;
 
 export function groupSlot(
   index: number,
