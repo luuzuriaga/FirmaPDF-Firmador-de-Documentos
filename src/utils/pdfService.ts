@@ -99,34 +99,49 @@ export async function renderCompositeSignaturePng(
   const baseWidth = 480;
   // Compute height based on whether signatory details are included
   const hasDetails = sig.signatory.showDetails && (sig.signatory.name || sig.signatory.role || sig.signatory.date);
-  const baseHeight = hasDetails ? 240 : 160;
 
-  canvas.width = baseWidth;
-  canvas.height = baseHeight;
+  let img: HTMLImageElement | null = null;
+  if (sig.dataUrl) {
+    img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise<void>((resolve, reject) => {
+      img!.onload = () => resolve();
+      img!.onerror = () => reject(new Error('Error cargando imagen de firma'));
+      img!.src = sig.dataUrl!;
+    });
+  }
+
+  // An image-only stamp (e.g. a scanned seal) takes the image's own
+  // proportions so it fills the stamp width instead of a fixed 3:1 box
+  const baseHeight = hasDetails
+    ? 240
+    : img
+      ? Math.round(Math.min(Math.max(baseWidth / (img.width / img.height), 80), 480))
+      : 160;
+
+  // Render at 3x so small text in scanned seals stays legible in the PDF
+  const RENDER_SCALE = 3;
+  canvas.width = baseWidth * RENDER_SCALE;
+  canvas.height = baseHeight * RENDER_SCALE;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Error al crear canvas de firma');
+  ctx.scale(RENDER_SCALE, RENDER_SCALE);
+  ctx.imageSmoothingQuality = 'high';
 
   // Solid white background (no border) so the stamp covers what is underneath
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, baseWidth, baseHeight);
 
   // 1. Render the signature graphic or text
-  if (sig.dataUrl) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Error cargando imagen de firma'));
-      img.src = sig.dataUrl!;
-    });
-
+  if (img) {
     const sigAreaHeight = hasDetails ? 140 : baseHeight;
-    // Fit image preserving aspect ratio
+    // Fit image preserving aspect ratio (image-only stamps use almost all of it)
+    const fill = hasDetails ? 0.85 : 0.96;
     const imgRatio = img.width / img.height;
-    let drawW = baseWidth * 0.85;
+    let drawW = baseWidth * fill;
     let drawH = drawW / imgRatio;
-    if (drawH > sigAreaHeight * 0.85) {
-      drawH = sigAreaHeight * 0.85;
+    if (drawH > sigAreaHeight * fill) {
+      drawH = sigAreaHeight * fill;
       drawW = drawH * imgRatio;
     }
     const drawX = (baseWidth - drawW) / 2;

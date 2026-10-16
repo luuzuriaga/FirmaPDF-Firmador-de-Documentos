@@ -1,164 +1,149 @@
 import { ObraId, SignatureConfig } from '../types/pdf';
 
 /**
- * Default slots for the 2 signatures of an obra, fitted to the ORDEN DE COMPRA
- * template: left of the totals box, just below "CONSIDERACIONES"
+ * Default placement of an obra's signatures, fitted to the ORDEN DE COMPRA
+ * template: just below "CONSIDERACIONES" and left of the totals box
+ * (which starts at ~65% of the page width)
  */
-export const GROUP_X_POSITIONS = [4, 33];
 export const GROUP_Y_PERCENT = 85;
 
+export function groupSlot(
+  index: number,
+  groupSize: number
+): { xPercent: number; widthPercent: number } {
+  if (groupSize >= 3) {
+    const xs = [1, 22, 43];
+    return { xPercent: xs[index] ?? xs[0], widthPercent: 21 };
+  }
+  const xs = [4, 33];
+  return { xPercent: xs[index] ?? xs[0], widthPercent: 26 };
+}
+
+interface SignatureSlot {
+  obra: ObraId;
+  title: string;
+  name: string;
+  role: string;
+  /** false when the uploaded image already carries the seal with name and role */
+  showDetails: boolean;
+  /** typed placeholder; empty means the signature image must be uploaded */
+  textValue?: string;
+  fontFamily?: string;
+  color?: string;
+  /** image in public/firmas/ (local only, git-ignored), loaded when present */
+  imagePath?: string;
+}
+
 /**
- * Creates the pre-generated signatures, grouped by obra:
- * 2 signatures each for Tayamarca, Uchumarca, Huancabamba and Valcer
+ * Signature slots per obra. Real signature images live in public/firmas/,
+ * which is excluded from git and Vercel: they load automatically only on
+ * the local copy. Elsewhere each user uploads them once via "Editar" and
+ * they are kept in that browser (see signatureStorage.ts)
  */
+const SLOTS: SignatureSlot[] = [
+  {
+    obra: 'tayamarca',
+    title: 'Tayamarca · Representante Común',
+    name: 'José Luis Bonilla Chávez',
+    role: 'Representante Común · Consorcio Vial Tayamarca',
+    showDetails: false,
+    imagePath: '/firmas/tayamarca/firma_consorcio_tayamarca_HD.png',
+  },
+  {
+    obra: 'uchumarca',
+    title: 'Uchumarca · Administrador de Obra',
+    name: 'CPC. Edgar Domínguez Solís',
+    role: 'Administrador de Obra',
+    showDetails: false,
+    imagePath: '/firmas/uchumarca/sello_firma_administrador_obra.png',
+  },
+  {
+    obra: 'uchumarca',
+    title: 'Uchumarca · Jefe de Logística',
+    name: 'Lucas Valerio Josué D.',
+    role: 'Jefe Logístico',
+    showDetails: false,
+    imagePath: '/firmas/uchumarca/sello_firma_jefe_logistica.png',
+  },
+  {
+    obra: 'uchumarca',
+    title: 'Uchumarca · Residente de Obra',
+    name: '',
+    role: 'Residente de Obra',
+    showDetails: false,
+    imagePath: '/firmas/uchumarca/sello_firma_residente_obra.png',
+  },
+  {
+    obra: 'huancabamba',
+    title: 'Huancabamba · Administrador de Obra',
+    name: '',
+    role: 'Administrador de Obra',
+    showDetails: true,
+    imagePath: '/firmas/huancabamba/firma_administrador_obra.png',
+  },
+  {
+    obra: 'huancabamba',
+    title: 'Huancabamba · Residente de Obra',
+    name: '',
+    role: 'Residente de Obra',
+    showDetails: true,
+    imagePath: '/firmas/huancabamba/firma_residente_obra.png',
+  },
+  {
+    obra: 'valcer',
+    title: 'Valcer · Firma 1',
+    name: 'Ing. Miguel A. Rojas',
+    role: 'Residente de Obra · Valcer',
+    showDetails: true,
+    textValue: 'Miguel A. Rojas',
+    fontFamily: 'Dancing Script',
+    color: '#0369a1',
+  },
+  {
+    obra: 'valcer',
+    title: 'Valcer · Firma 2',
+    name: 'Ing. Patricia C. Huamán',
+    role: 'Supervisor de Obra · Valcer',
+    showDetails: true,
+    textValue: 'Patricia C. Huamán',
+    fontFamily: 'Caveat',
+    color: '#0f172a',
+  },
+];
+
 export function getPresetSignatures(): SignatureConfig[] {
   const today = new Date().toISOString().split('T')[0];
 
-  const base = {
-    type: 'type' as const,
-    dataUrl: null,
-    pageNumber: 1,
-    yPercent: GROUP_Y_PERCENT,
-    widthPercent: 26,
-    aspectRatio: 2.0,
-  };
+  return SLOTS.map((slot, idx) => {
+    const group = SLOTS.filter((s) => s.obra === slot.obra);
+    const { xPercent, widthPercent } = groupSlot(group.indexOf(slot), group.length);
+    return {
+      id: idx + 1,
+      obra: slot.obra,
+      title: slot.title,
+      color: slot.color ?? '#0f172a',
+      themeColor: 'slate',
+      type: slot.textValue ? 'type' : 'upload',
+      dataUrl: null,
+      textValue: slot.textValue ?? '',
+      fontFamily: slot.fontFamily ?? 'Dancing Script',
+      signatory: {
+        name: slot.name,
+        role: slot.role,
+        date: today,
+        showDetails: slot.showDetails,
+      },
+      pageNumber: 1,
+      xPercent,
+      yPercent: GROUP_Y_PERCENT,
+      widthPercent,
+      aspectRatio: 2.0,
+      imagePath: slot.imagePath,
+    };
+  });
+}
 
-  return [
-    {
-      ...base,
-      id: 1,
-      obra: 'tayamarca' as ObraId,
-      title: 'Tayamarca · Firma 1',
-      color: '#1d4ed8', // Royal blue ink
-      themeColor: 'blue',
-      textValue: 'Carlos M. Arismendi',
-      fontFamily: 'Dancing Script',
-      signatory: {
-        name: 'Ing. Carlos M. Arismendi',
-        role: 'Residente de Obra · Tayamarca',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[0],
-    },
-    {
-      ...base,
-      id: 2,
-      obra: 'tayamarca' as ObraId,
-      title: 'Tayamarca · Firma 2',
-      color: '#0f172a', // Slate black ink
-      themeColor: 'indigo',
-      textValue: 'Valeria R. Santillana',
-      fontFamily: 'Caveat',
-      signatory: {
-        name: 'Ing. Valeria Santillana',
-        role: 'Supervisor de Obra · Tayamarca',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[1],
-    },
-    {
-      ...base,
-      id: 3,
-      obra: 'uchumarca' as ObraId,
-      title: 'Uchumarca · Firma 1',
-      color: '#0369a1', // Sky/ocean blue ink
-      themeColor: 'emerald',
-      textValue: 'Fernando L. Vega',
-      fontFamily: 'Great Vibes',
-      signatory: {
-        name: 'Ing. Fernando L. Vega',
-        role: 'Residente de Obra · Uchumarca',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[0],
-    },
-    {
-      ...base,
-      id: 4,
-      obra: 'uchumarca' as ObraId,
-      title: 'Uchumarca · Firma 2',
-      color: '#0f172a', // Slate black ink
-      themeColor: 'amber',
-      textValue: 'Rosa E. Quispe',
-      fontFamily: 'Dancing Script',
-      signatory: {
-        name: 'Ing. Rosa E. Quispe',
-        role: 'Supervisor de Obra · Uchumarca',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[1],
-    },
-    {
-      ...base,
-      id: 5,
-      obra: 'huancabamba' as ObraId,
-      title: 'Huancabamba · Firma 1',
-      color: '#1d4ed8', // Royal blue ink
-      themeColor: 'rose',
-      textValue: 'Jorge A. Mendoza',
-      fontFamily: 'Caveat',
-      signatory: {
-        name: 'Ing. Jorge A. Mendoza',
-        role: 'Residente de Obra · Huancabamba',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[0],
-    },
-    {
-      ...base,
-      id: 6,
-      obra: 'huancabamba' as ObraId,
-      title: 'Huancabamba · Firma 2',
-      color: '#0f172a', // Slate black ink
-      themeColor: 'violet',
-      textValue: 'Lucía M. Torres',
-      fontFamily: 'Great Vibes',
-      signatory: {
-        name: 'Ing. Lucía M. Torres',
-        role: 'Supervisor de Obra · Huancabamba',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[1],
-    },
-    {
-      ...base,
-      id: 7,
-      obra: 'valcer' as ObraId,
-      title: 'Valcer · Firma 1',
-      color: '#0369a1', // Sky/ocean blue ink
-      themeColor: 'cyan',
-      textValue: 'Miguel A. Rojas',
-      fontFamily: 'Dancing Script',
-      signatory: {
-        name: 'Ing. Miguel A. Rojas',
-        role: 'Residente de Obra · Valcer',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[0],
-    },
-    {
-      ...base,
-      id: 8,
-      obra: 'valcer' as ObraId,
-      title: 'Valcer · Firma 2',
-      color: '#0f172a', // Slate black ink
-      themeColor: 'fuchsia',
-      textValue: 'Patricia C. Huamán',
-      fontFamily: 'Caveat',
-      signatory: {
-        name: 'Ing. Patricia C. Huamán',
-        role: 'Supervisor de Obra · Valcer',
-        date: today,
-        showDetails: true,
-      },
-      xPercent: GROUP_X_POSITIONS[1],
-    },
-  ];
+/** True when the signature has something to stamp (image or typed text) */
+export function hasSignatureContent(sig: SignatureConfig): boolean {
+  return !!sig.dataUrl || !!sig.textValue;
 }

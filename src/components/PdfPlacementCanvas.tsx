@@ -360,7 +360,9 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                       <img
                         src={sig.dataUrl}
                         alt={sig.title}
-                        className="h-10 w-auto max-w-full object-contain pointer-events-none select-none"
+                        className={`${
+                          sig.signatory.showDetails ? 'h-10 w-auto' : 'w-full h-auto'
+                        } max-w-full object-contain pointer-events-none select-none`}
                       />
                     ) : sig.textValue ? (
                       <span

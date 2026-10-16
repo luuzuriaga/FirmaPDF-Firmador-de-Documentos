@@ -33,6 +33,8 @@ export interface SignatureConfig {
   yPercent: number; // 0 to 100 (% of page height from top)
   widthPercent: number; // e.g. 25% of page width
   aspectRatio: number; // width / height
+  // Local image in public/firmas/ loaded automatically when present
+  imagePath?: string;
 }
 
 export interface PdfDocumentState {

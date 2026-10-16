@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SignatureConfig, SignatureType } from '../types/pdf';
 import { SignatureCanvas } from './SignatureCanvas';
+import { loadImageAsDataUrl } from '../utils/imageUtils';
 
 interface SignatureModalProps {
   signature: SignatureConfig;
@@ -61,10 +62,13 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Downscale large scans so they fit in the browser's storage
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result as string;
-      setDrawDataUrl(result);
+      loadImageAsDataUrl(result)
+        .then(setDrawDataUrl)
+        .catch(() => setDrawDataUrl(result));
     };
     reader.readAsDataURL(file);
   };

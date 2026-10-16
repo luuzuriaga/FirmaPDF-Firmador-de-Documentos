@@ -111,10 +111,10 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
             type="button"
             onClick={onLoadPresets}
             className="flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-2 py-1 rounded transition-colors"
-            title="Cargar firmas listas para probar de inmediato"
+            title="Volver a colocar las firmas en su posición inicial"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Firmas de muestra</span>
+            <span>Restablecer</span>
           </button>
         </div>
         <p className="text-xs text-slate-500 leading-relaxed">

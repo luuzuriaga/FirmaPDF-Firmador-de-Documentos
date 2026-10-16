@@ -19,9 +19,15 @@ import {
 import { ObraId, OBRAS, SignatureConfig } from './types/pdf';
 import {
   getPresetSignatures,
-  GROUP_X_POSITIONS,
+  groupSlot,
   GROUP_Y_PERCENT,
+  hasSignatureContent,
 } from './utils/sampleSignatures';
+import {
+  applySavedSignatures,
+  saveSignatures,
+} from './utils/signatureStorage';
+import { loadImageAsDataUrl } from './utils/imageUtils';
 import {
   getPdfInfo,
   stampSignaturesToPdf,
@@ -41,10 +47,39 @@ export default function App() {
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadSuccessNotice, setDownloadSuccessNotice] = useState<boolean>(false);
 
-  // All signatures, grouped by obra
+  // All signatures, grouped by obra, with the ones saved in this browser
   const [signatures, setSignatures] = useState<SignatureConfig[]>(() =>
-    getPresetSignatures()
+    applySavedSignatures(getPresetSignatures())
   );
+
+  // Remember uploaded signatures in this browser only
+  const [storageFailed, setStorageFailed] = useState(false);
+  useEffect(() => {
+    setStorageFailed(!saveSignatures(signatures));
+  }, [signatures]);
+
+  // Load local signature images (public/firmas/) into empty slots; on the
+  // published app they are absent and the slots wait for a manual upload
+  useEffect(() => {
+    signatures
+      .filter((s) => s.imagePath && !s.dataUrl && !s.textValue)
+      .forEach((s) => {
+        loadImageAsDataUrl(s.imagePath!)
+          .then((dataUrl) =>
+            setSignatures((prev) =>
+              prev.map((p) =>
+                p.id === s.id && !p.dataUrl
+                  ? { ...p, type: 'upload', dataUrl }
+                  : p
+              )
+            )
+          )
+          .catch(() => {
+            // Image not present (e.g. on the published app): keep it empty
+          });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Active obra: only its signatures are shown and stamped
   const [activeObra, setActiveObra] = useState<ObraId>('tayamarca');
@@ -95,11 +130,11 @@ export default function App() {
       const targetPage = info.numPages > 1 ? info.numPages : 1;
       setSignatures((prev) =>
         prev.map((s) => {
-          const slot = prev.filter((o) => o.obra === s.obra).indexOf(s);
+          const group = prev.filter((o) => o.obra === s.obra);
           return {
             ...s,
+            ...groupSlot(group.indexOf(s), group.length),
             pageNumber: targetPage,
-            xPercent: GROUP_X_POSITIONS[slot] ?? GROUP_X_POSITIONS[0],
             yPercent: GROUP_Y_PERCENT,
           };
         })
@@ -119,9 +154,9 @@ export default function App() {
     );
   };
 
-  // Reset / Load Preset Signatures
+  // Reset positions, keeping the signatures saved in this browser
   const handleLoadPresets = () => {
-    const presets = getPresetSignatures();
+    const presets = applySavedSignatures(getPresetSignatures());
     setSignatures(
       presets.map((s) => ({
         ...s,
@@ -136,13 +171,11 @@ export default function App() {
       const group = prev.filter((s) => s.obra === activeObra);
       return prev.map((s) => {
         if (s.obra !== activeObra) return s;
-        const slot = group.indexOf(s);
         return {
           ...s,
+          ...groupSlot(group.indexOf(s), group.length),
           pageNumber: currentPage,
-          xPercent: GROUP_X_POSITIONS[slot] ?? GROUP_X_POSITIONS[0],
           yPercent: GROUP_Y_PERCENT,
-          widthPercent: 26,
         };
       });
     });
@@ -151,11 +184,18 @@ export default function App() {
   // Final Stamp and Download
   const handleDownloadSignedPdf = async () => {
     if (!pdfBytes) return;
+    const ready = obraSignatures.filter(hasSignatureContent);
+    if (ready.length === 0) {
+      alert(
+        `Las firmas de ${activeObraName} aún no tienen imagen. Usa "Editar" en cada firma para subirla.`
+      );
+      return;
+    }
     setIsDownloading(true);
     setDownloadSuccessNotice(false);
 
     try {
-      const signedBytes = await stampSignaturesToPdf(pdfBytes, obraSignatures);
+      const signedBytes = await stampSignaturesToPdf(pdfBytes, ready);
       const cleanBaseName = pdfName
         ? pdfName.replace(/\.pdf$/i, '')
         : 'documento';
@@ -280,6 +320,12 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {storageFailed && (
+        <div className="bg-amber-500 text-white px-4 py-2.5 text-xs text-center font-medium">
+          El navegador no pudo guardar las firmas: se perderán al recargar la página.
+        </div>
+      )}
 
       {/* Optional Success Download Toast */}
       {downloadSuccessNotice && (
