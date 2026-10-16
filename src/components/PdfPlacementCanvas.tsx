@@ -307,7 +307,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
               7: { border: 'border-cyan-600', bg: 'bg-cyan-600', text: 'text-cyan-700' },
               8: { border: 'border-fuchsia-600', bg: 'bg-fuchsia-600', text: 'text-fuchsia-700' },
             };
-            const theme = badgeColorMap[sig.id] || badgeColorMap[1];
+            const theme = badgeColorMap[((sig.id - 1) % 8) + 1];
 
             return (
               <div

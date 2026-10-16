@@ -23,10 +23,7 @@ import {
   GROUP_Y_PERCENT,
   hasSignatureContent,
 } from './utils/sampleSignatures';
-import {
-  applySavedSignatures,
-  saveSignatures,
-} from './utils/signatureStorage';
+import { loadSignatures, saveSignatures } from './utils/signatureStorage';
 import { loadImageAsDataUrl } from './utils/imageUtils';
 import {
   getPdfInfo,
@@ -48,38 +45,51 @@ export default function App() {
   const [downloadSuccessNotice, setDownloadSuccessNotice] = useState<boolean>(false);
 
   // All signatures, grouped by obra, with the ones saved in this browser
-  const [signatures, setSignatures] = useState<SignatureConfig[]>(() =>
-    applySavedSignatures(getPresetSignatures())
+  const [signatures, setSignatures] = useState<SignatureConfig[]>(
+    getPresetSignatures
   );
+  // Nothing is saved until the stored signatures are read, so the presets
+  // never overwrite them
+  const [signaturesLoaded, setSignaturesLoaded] = useState(false);
 
-  // Remember uploaded signatures in this browser only
-  const [storageFailed, setStorageFailed] = useState(false);
   useEffect(() => {
-    setStorageFailed(!saveSignatures(signatures));
-  }, [signatures]);
+    let cancelled = false;
+    loadSignatures(getPresetSignatures()).then((loaded) => {
+      if (cancelled) return;
+      setSignatures(loaded);
+      setSignaturesLoaded(true);
 
-  // Load local signature images (public/firmas/) into empty slots; on the
-  // published app they are absent and the slots wait for a manual upload
-  useEffect(() => {
-    signatures
-      .filter((s) => s.imagePath && !s.dataUrl && !s.textValue)
-      .forEach((s) => {
-        loadImageAsDataUrl(s.imagePath!)
-          .then((dataUrl) =>
-            setSignatures((prev) =>
-              prev.map((p) =>
-                p.id === s.id && !p.dataUrl
-                  ? { ...p, type: 'upload', dataUrl }
-                  : p
+      // Load local signature images (public/firmas/) into empty slots; on
+      // the published app they are absent and the slots wait for an upload
+      loaded
+        .filter((s) => s.imagePath && !s.dataUrl && !s.textValue)
+        .forEach((s) => {
+          loadImageAsDataUrl(s.imagePath!)
+            .then((dataUrl) =>
+              setSignatures((prev) =>
+                prev.map((p) =>
+                  p.id === s.id && !p.dataUrl
+                    ? { ...p, type: 'upload', dataUrl }
+                    : p
+                )
               )
             )
-          )
-          .catch(() => {
-            // Image not present (e.g. on the published app): keep it empty
-          });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+            .catch(() => {
+              // Image not present (e.g. on the published app): keep it empty
+            });
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Remember signatures in this browser only, right away on every change
+  const [storageFailed, setStorageFailed] = useState(false);
+  useEffect(() => {
+    if (!signaturesLoaded) return;
+    saveSignatures(signatures).then((ok) => setStorageFailed(!ok));
+  }, [signatures, signaturesLoaded]);
 
   // Active obra: only its signatures are shown and stamped
   const [activeObra, setActiveObra] = useState<ObraId>('tayamarca');
@@ -154,15 +164,72 @@ export default function App() {
     );
   };
 
-  // Reset positions, keeping the signatures saved in this browser
+  // Reset positions of every obra, keeping its signatures
   const handleLoadPresets = () => {
-    const presets = applySavedSignatures(getPresetSignatures());
-    setSignatures(
-      presets.map((s) => ({
-        ...s,
-        pageNumber: currentPage,
-      }))
+    setSignatures((prev) =>
+      prev.map((s) => {
+        const group = prev.filter((o) => o.obra === s.obra);
+        return {
+          ...s,
+          ...groupSlot(group.indexOf(s), group.length),
+          pageNumber: currentPage,
+          yPercent: GROUP_Y_PERCENT,
+        };
+      })
     );
+  };
+
+  // Add an empty signature to the active obra and open it for editing
+  const handleAddSignature = () => {
+    const id = Math.max(0, ...signatures.map((s) => s.id)) + 1;
+    const count = obraSignatures.length + 1;
+    const newSig: SignatureConfig = {
+      id,
+      obra: activeObra,
+      title: `${activeObraName} · Firma ${count}`,
+      color: '#0f172a',
+      themeColor: 'slate',
+      type: 'upload',
+      dataUrl: null,
+      textValue: '',
+      fontFamily: 'Dancing Script',
+      signatory: {
+        name: '',
+        role: '',
+        date: new Date().toISOString().split('T')[0],
+        showDetails: true,
+      },
+      pageNumber: currentPage,
+      xPercent: 0,
+      yPercent: GROUP_Y_PERCENT,
+      widthPercent: 26,
+      aspectRatio: 2.0,
+    };
+    // Re-distribute the obra's signatures so the new one fits beside them
+    setSignatures((prev) => {
+      const next = [...prev, newSig];
+      const group = next.filter((s) => s.obra === activeObra);
+      return next.map((s) =>
+        s.obra === activeObra
+          ? {
+              ...s,
+              ...groupSlot(group.indexOf(s), group.length),
+              pageNumber: s.id === id ? currentPage : s.pageNumber,
+            }
+          : s
+      );
+    });
+    setSelectedSignatureId(id);
+    setEditingSignature(newSig);
+  };
+
+  const handleRemoveSignature = (sig: SignatureConfig) => {
+    if (!window.confirm(`¿Eliminar la firma "${sig.title}"?`)) return;
+    setSignatures((prev) => prev.filter((s) => s.id !== sig.id));
+    if (selectedSignatureId === sig.id) {
+      const next = obraSignatures.find((s) => s.id !== sig.id);
+      setSelectedSignatureId(next ? next.id : null);
+    }
   };
 
   // Align the active obra's signatures along the bottom of the current page
@@ -364,6 +431,8 @@ export default function App() {
               onUpdateSignature={handleUpdateSignature}
               onAlignBottom={handleAlignBottom}
               onLoadPresets={handleLoadPresets}
+              onAddSignature={handleAddSignature}
+              onRemoveSignature={handleRemoveSignature}
               onDownload={handleDownloadSignedPdf}
               isDownloading={isDownloading}
             />

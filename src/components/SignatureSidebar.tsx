@@ -11,6 +11,8 @@ import {
   ChevronRight,
   MoveHorizontal,
   RefreshCw,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { ObraId, OBRAS, SignatureConfig } from '../types/pdf';
 
@@ -26,6 +28,8 @@ interface SignatureSidebarProps {
   onUpdateSignature: (sig: SignatureConfig) => void;
   onAlignBottom: () => void;
   onLoadPresets: () => void;
+  onAddSignature: () => void;
+  onRemoveSignature: (sig: SignatureConfig) => void;
   onDownload: () => void;
   isDownloading: boolean;
 }
@@ -42,6 +46,8 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onUpdateSignature,
   onAlignBottom,
   onLoadPresets,
+  onAddSignature,
+  onRemoveSignature,
   onDownload,
   isDownloading,
 }) => {
@@ -154,7 +160,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
       <div className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-320px)] pr-0.5">
         {signatures.map((sig) => {
           const isSelected = selectedSignatureId === sig.id;
-          const theme = colorMap[sig.id] || colorMap[1];
+          const theme = colorMap[((sig.id - 1) % 8) + 1];
           const hasSignature = !!sig.dataUrl || !!sig.textValue;
 
           return (
@@ -178,17 +184,31 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenEditModal(sig);
-                  }}
-                  className="flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 px-2 py-0.5 rounded shadow-2xs transition-colors"
-                >
-                  <PenTool className="w-3 h-3" />
-                  <span>Editar</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenEditModal(sig);
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 px-2 py-0.5 rounded shadow-2xs transition-colors"
+                  >
+                    <PenTool className="w-3 h-3" />
+                    <span>Editar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveSignature(sig);
+                    }}
+                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded transition-colors"
+                    title="Eliminar firma"
+                    aria-label={`Eliminar ${sig.title}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
               {/* Signature Preview */}
@@ -330,6 +350,21 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
             </div>
           );
         })}
+
+        {signatures.length === 0 && (
+          <p className="text-xs text-slate-500 text-center py-4">
+            Esta obra no tiene firmas.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={onAddSignature}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 border border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Agregar firma</span>
+        </button>
       </div>
 
       {/* Download Action Footer */}

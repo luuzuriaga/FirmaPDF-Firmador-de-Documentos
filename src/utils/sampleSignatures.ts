@@ -12,8 +12,9 @@ export function groupSlot(
   groupSize: number
 ): { xPercent: number; widthPercent: number } {
   if (groupSize >= 3) {
-    const xs = [1, 22, 43];
-    return { xPercent: xs[index] ?? xs[0], widthPercent: 21 };
+    // Share the 63% left of the totals box (3 signatures: 21% each)
+    const width = Math.floor(63 / groupSize);
+    return { xPercent: 1 + index * width, widthPercent: width };
   }
   const xs = [4, 33];
   return { xPercent: xs[index] ?? xs[0], widthPercent: 26 };
