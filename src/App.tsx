@@ -136,14 +136,6 @@ export default function App() {
     setSelectedSignatureId(first ? first.id : null);
   };
 
-  // New obras start empty; their signatures are added with "Agregar firma"
-  const handleAddObra = (name: string) => {
-    const id = `obra-${Date.now()}`;
-    setObras((prev) => [...prev, { id, name }]);
-    setActiveObra(id);
-    setSelectedSignatureId(null);
-  };
-
   const handleRemoveObra = (obraId: ObraId) => {
     const obra = obras.find((o) => o.id === obraId);
     if (!obra) return;
@@ -504,7 +496,6 @@ export default function App() {
               obras={obras}
               activeObra={activeObra}
               onChangeObra={handleChangeObra}
-              onAddObra={handleAddObra}
               onRemoveObra={handleRemoveObra}
               numPages={numPages}
               currentPage={currentPage}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   AlignHorizontalDistributeCenter,
   Building2,
@@ -11,7 +11,6 @@ import {
   Sparkles,
   Trash2,
   UserRoundPen,
-  X,
 } from 'lucide-react';
 import { Obra, ObraId, SignatureConfig } from '../types/pdf';
 
@@ -20,7 +19,6 @@ interface SignatureSidebarProps {
   obras: Obra[];
   activeObra: ObraId;
   onChangeObra: (obra: ObraId) => void;
-  onAddObra: (name: string) => void;
   onRemoveObra: (obra: ObraId) => void;
   numPages: number;
   currentPage: number;
@@ -54,7 +52,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   obras,
   activeObra,
   onChangeObra,
-  onAddObra,
   onRemoveObra,
   numPages,
   currentPage,
@@ -67,13 +64,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onAddSignature,
   onRemoveSignature,
 }) => {
-  // Inline form to name a new obra
-  const [newObraName, setNewObraName] = useState<string | null>(null);
-  const submitNewObra = () => {
-    const name = (newObraName ?? '').trim();
-    if (name) onAddObra(name);
-    setNewObraName(null);
-  };
   const activeObraName = obras.find((o) => o.id === activeObra)?.name ?? '';
 
   return (
@@ -119,63 +109,18 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
           <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        {newObraName === null ? (
-          <div className="mt-2.5 flex items-center justify-between">
+        {activeObraName && (
+          <div className="mt-2 flex justify-end">
             <button
               type="button"
-              onClick={() => setNewObraName('')}
-              className="flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 cursor-pointer"
+              onClick={() => onRemoveObra(activeObra)}
+              title={`Eliminar la obra ${activeObraName}`}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>Agregar obra</span>
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Eliminar esta obra</span>
             </button>
-            {activeObraName && (
-              <button
-                type="button"
-                onClick={() => onRemoveObra(activeObra)}
-                title={`Eliminar la obra ${activeObraName}`}
-                className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Eliminar esta obra</span>
-              </button>
-            )}
           </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submitNewObra();
-            }}
-            className="mt-2.5 flex items-center gap-1.5"
-          >
-            <input
-              autoFocus
-              value={newObraName}
-              onChange={(e) => setNewObraName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') setNewObraName(null);
-              }}
-              placeholder="Nombre de la obra"
-              aria-label="Nombre de la nueva obra"
-              className="flex-1 min-w-0 px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-            />
-            <button
-              type="submit"
-              disabled={!newObraName.trim()}
-              className="px-3 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg disabled:opacity-40 cursor-pointer"
-            >
-              Agregar
-            </button>
-            <button
-              type="button"
-              onClick={() => setNewObraName(null)}
-              className="p-2 text-slate-400 hover:text-slate-700 rounded-lg"
-              aria-label="Cancelar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </form>
         )}
       </div>
 
