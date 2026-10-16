@@ -225,7 +225,7 @@ export default function App() {
             <FileSignature className="w-4 h-4 text-white" />
           </div>
           <span className="text-base font-bold tracking-tight text-slate-900">
-            FirmaPDF
+            FirmaPDF Valcer
           </span>
         </div>
 
@@ -417,7 +417,7 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            FirmaPDF · Estampado de firmas por obra
+            FirmaPDF Valcer · Estampado de firmas por obra
           </span>
           <span className="text-slate-400">
             Procesamiento seguro directo en tu explorador web
