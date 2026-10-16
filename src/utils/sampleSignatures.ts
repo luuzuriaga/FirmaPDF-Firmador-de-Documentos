@@ -3,8 +3,7 @@ import { ObraId, SignatureConfig } from '../types/pdf';
 /**
  * Default placement of an obra's signatures, fitted to the ORDEN DE COMPRA
  * template: in the blank space of the items table, ending just above the
- * "SON:" line (76% of the height), left of the totals column
- * (which starts at ~65% of the page width)
+ * "SON:" line (76% of the height), as a group centered on the page
  */
 export const GROUP_Y_PERCENT = 64;
 
@@ -12,13 +11,12 @@ export function groupSlot(
   index: number,
   groupSize: number
 ): { xPercent: number; widthPercent: number } {
-  if (groupSize >= 3) {
-    // Share the 63% left of the totals box (3 signatures: 21% each)
-    const width = Math.floor(63 / groupSize);
-    return { xPercent: 1 + index * width, widthPercent: width };
-  }
-  const xs = [4, 33];
-  return { xPercent: xs[index] ?? xs[0], widthPercent: 26 };
+  const n = Math.max(groupSize, 1);
+  const gap = n >= 3 ? 3 : 6;
+  const width =
+    n === 1 ? 26 : Math.min(28, Math.floor((90 - (n - 1) * gap) / n));
+  const start = (100 - (n * width + (n - 1) * gap)) / 2;
+  return { xPercent: start + index * (width + gap), widthPercent: width };
 }
 
 interface SignatureSlot {
