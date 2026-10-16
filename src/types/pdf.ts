@@ -1,15 +1,24 @@
 export interface SignatoryInfo {
   name: string;
   role: string;
-  idNumber: string;
   date: string;
   showDetails: boolean;
 }
 
 export type SignatureType = 'draw' | 'type' | 'upload';
 
+export type ObraId = 'tayamarca' | 'uchumarca' | 'huancabamba' | 'valcer';
+
+export const OBRAS: { id: ObraId; name: string }[] = [
+  { id: 'tayamarca', name: 'Tayamarca' },
+  { id: 'uchumarca', name: 'Uchumarca' },
+  { id: 'huancabamba', name: 'Huancabamba' },
+  { id: 'valcer', name: 'Valcer' },
+];
+
 export interface SignatureConfig {
-  id: 1 | 2 | 3;
+  id: number;
+  obra: ObraId;
   title: string;
   color: string; // stroke/ink color (#0f172a, #1d4ed8, etc.)
   themeColor: string; // UI accent

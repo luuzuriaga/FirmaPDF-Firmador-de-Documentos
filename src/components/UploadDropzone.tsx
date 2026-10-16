@@ -69,10 +69,10 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
       {/* Editorial Headline */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-2">
-          Firmar Documento PDF con 3 Firmas
+          Firmar Documentos PDF por Obra
         </h1>
         <p className="text-sm text-slate-600 max-w-lg mx-auto">
-          Carga tu documento en segundos, personaliza las 3 firmas (dibujo, tipografía o imagen) y descárgalo listo con total validez.
+          Carga tu documento en segundos, elige la obra, personaliza sus 2 firmas (dibujo, tipografía o imagen) y descárgalo listo con total validez.
         </p>
       </div>
 
@@ -119,7 +119,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium rounded-lg transition-colors border border-slate-200 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-amber-600" />
-            <span>Probar con documento de muestra</span>
+            <span>Probar con la ORDEN DE COMPRA de ejemplo</span>
           </button>
         </div>
 
@@ -149,7 +149,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center text-[11px] font-bold">
               2
             </span>
-            <span>Personaliza 3 Firmas</span>
+            <span>Firmas por Obra</span>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed">
             Dibuja en pantalla táctil o ratón, escribe tu nombre en caligrafía o sube una imagen de tu firma.

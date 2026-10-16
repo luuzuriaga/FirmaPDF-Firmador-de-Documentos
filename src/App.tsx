@@ -16,9 +16,12 @@ import {
   HelpCircle,
   FileSignature,
 } from 'lucide-react';
-import { SignatureConfig } from './types/pdf';
-import { createSamplePdf } from './utils/samplePdf';
-import { getPresetSignatures } from './utils/sampleSignatures';
+import { ObraId, OBRAS, SignatureConfig } from './types/pdf';
+import {
+  getPresetSignatures,
+  GROUP_X_POSITIONS,
+  GROUP_Y_PERCENT,
+} from './utils/sampleSignatures';
 import {
   getPdfInfo,
   stampSignaturesToPdf,
@@ -38,10 +41,22 @@ export default function App() {
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadSuccessNotice, setDownloadSuccessNotice] = useState<boolean>(false);
 
-  // The 3 signatures state
+  // All signatures, grouped by obra
   const [signatures, setSignatures] = useState<SignatureConfig[]>(() =>
     getPresetSignatures()
   );
+
+  // Active obra: only its signatures are shown and stamped
+  const [activeObra, setActiveObra] = useState<ObraId>('tayamarca');
+  const obraSignatures = signatures.filter((s) => s.obra === activeObra);
+  const activeObraName =
+    OBRAS.find((o) => o.id === activeObra)?.name ?? activeObra;
+
+  const handleChangeObra = (obra: ObraId) => {
+    setActiveObra(obra);
+    const first = signatures.find((s) => s.obra === obra);
+    setSelectedSignatureId(first ? first.id : null);
+  };
 
   // Selected signature for highlighting
   const [selectedSignatureId, setSelectedSignatureId] = useState<number | null>(
@@ -52,19 +67,16 @@ export default function App() {
   const [editingSignature, setEditingSignature] =
     useState<SignatureConfig | null>(null);
 
-  // Load sample PDF automatically if user wants or on quick start
+  // Load the ORDEN DE COMPRA template as the sample document
   const handleLoadSamplePdf = async () => {
     setIsLoadingPdf(true);
     try {
-      const bytes = await createSamplePdf();
-      const info = await getPdfInfo(bytes);
-      setPdfBytes(bytes);
-      setPdfName('acta_acuerdo_comercial_3_firmas.pdf');
-      setNumPages(info.numPages);
-      setCurrentPage(1);
+      const res = await fetch('/plantilla-orden-de-compra.pdf');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      await handleFileLoaded(bytes, 'ORDEN DE COMPRA.pdf');
     } catch (err) {
       console.error('Error cargando PDF de muestra:', err);
-    } finally {
       setIsLoadingPdf(false);
     }
   };
@@ -79,15 +91,18 @@ export default function App() {
       setNumPages(info.numPages);
       setCurrentPage(1);
 
-      // Distribute the 3 signatures nicely on the last page or page 1
+      // Distribute each obra's signatures nicely on the last page or page 1
       const targetPage = info.numPages > 1 ? info.numPages : 1;
       setSignatures((prev) =>
-        prev.map((s, idx) => ({
-          ...s,
-          pageNumber: targetPage,
-          xPercent: 7 + idx * 31,
-          yPercent: 78,
-        }))
+        prev.map((s) => {
+          const slot = prev.filter((o) => o.obra === s.obra).indexOf(s);
+          return {
+            ...s,
+            pageNumber: targetPage,
+            xPercent: GROUP_X_POSITIONS[slot] ?? GROUP_X_POSITIONS[0],
+            yPercent: GROUP_Y_PERCENT,
+          };
+        })
       );
     } catch (err) {
       console.error('Error cargando documento PDF:', err);
@@ -104,7 +119,7 @@ export default function App() {
     );
   };
 
-  // Reset / Load Preset 3 Signatures
+  // Reset / Load Preset Signatures
   const handleLoadPresets = () => {
     const presets = getPresetSignatures();
     setSignatures(
@@ -115,22 +130,22 @@ export default function App() {
     );
   };
 
-  // Align the 3 signatures along the bottom of the current page
-  const handleAlignBottomThree = () => {
-    setSignatures((prev) =>
-      prev.map((s) => {
-        let x = 7;
-        if (s.id === 2) x = 37;
-        if (s.id === 3) x = 67;
+  // Align the active obra's signatures along the bottom of the current page
+  const handleAlignBottom = () => {
+    setSignatures((prev) => {
+      const group = prev.filter((s) => s.obra === activeObra);
+      return prev.map((s) => {
+        if (s.obra !== activeObra) return s;
+        const slot = group.indexOf(s);
         return {
           ...s,
           pageNumber: currentPage,
-          xPercent: x,
-          yPercent: 78,
+          xPercent: GROUP_X_POSITIONS[slot] ?? GROUP_X_POSITIONS[0],
+          yPercent: GROUP_Y_PERCENT,
           widthPercent: 26,
         };
-      })
-    );
+      });
+    });
   };
 
   // Final Stamp and Download
@@ -140,11 +155,11 @@ export default function App() {
     setDownloadSuccessNotice(false);
 
     try {
-      const signedBytes = await stampSignaturesToPdf(pdfBytes, signatures);
+      const signedBytes = await stampSignaturesToPdf(pdfBytes, obraSignatures);
       const cleanBaseName = pdfName
         ? pdfName.replace(/\.pdf$/i, '')
         : 'documento';
-      const outputFilename = `${cleanBaseName}_firmado_3_firmas.pdf`;
+      const outputFilename = `${cleanBaseName}_firmado_${activeObra}.pdf`;
 
       triggerFileDownload(signedBytes, outputFilename);
 
@@ -195,7 +210,7 @@ export default function App() {
                 : 'text-slate-400'
             }
           >
-            2. Configurar 3 Firmas
+            2. Elegir Obra y Firmas
           </span>
           <span aria-hidden="true" className="text-slate-300">
             ·
@@ -260,7 +275,7 @@ export default function App() {
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Ver ejemplo con 3 firmas</span>
+              <span>Ver ejemplo</span>
             </button>
           )}
         </div>
@@ -271,7 +286,7 @@ export default function App() {
         <div className="bg-emerald-600 text-white px-4 py-2.5 text-xs text-center font-medium shadow-xs flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-1">
           <CheckCircle2 className="w-4 h-4" />
           <span>
-            ¡El documento PDF con las 3 firmas ha sido generado y descargado con éxito!
+            ¡El documento PDF con las firmas de {activeObraName} ha sido generado y descargado con éxito!
           </span>
         </div>
       )}
@@ -292,14 +307,16 @@ export default function App() {
           <div className="flex-1 flex flex-col lg:flex-row gap-5 items-stretch min-h-[620px]">
             {/* Sidebar Controls */}
             <SignatureSidebar
-              signatures={signatures}
+              signatures={obraSignatures}
+              activeObra={activeObra}
+              onChangeObra={handleChangeObra}
               numPages={numPages}
               currentPage={currentPage}
               selectedSignatureId={selectedSignatureId}
               onSelectSignature={(id) => setSelectedSignatureId(id)}
               onOpenEditModal={(sig) => setEditingSignature(sig)}
               onUpdateSignature={handleUpdateSignature}
-              onAlignBottomThree={handleAlignBottomThree}
+              onAlignBottom={handleAlignBottom}
               onLoadPresets={handleLoadPresets}
               onDownload={handleDownloadSignedPdf}
               isDownloading={isDownloading}
@@ -328,7 +345,7 @@ export default function App() {
                   numPages={numPages}
                   currentPage={currentPage}
                   onPageChange={(p) => setCurrentPage(p)}
-                  signatures={signatures}
+                  signatures={obraSignatures}
                   onUpdateSignature={handleUpdateSignature}
                   onOpenEditModal={(sig) => setEditingSignature(sig)}
                   selectedSignatureId={selectedSignatureId}
@@ -354,7 +371,7 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            FirmaPDF · Sistema de suscripción y estampado de 3 firmas para documentos PDF
+            FirmaPDF · Estampado de firmas por obra
           </span>
           <span className="text-slate-400">
             Procesamiento seguro directo en tu explorador web

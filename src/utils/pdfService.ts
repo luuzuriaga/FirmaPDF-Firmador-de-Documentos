@@ -98,7 +98,7 @@ export async function renderCompositeSignaturePng(
   const canvas = document.createElement('canvas');
   const baseWidth = 480;
   // Compute height based on whether signatory details are included
-  const hasDetails = sig.signatory.showDetails && (sig.signatory.name || sig.signatory.role || sig.signatory.idNumber);
+  const hasDetails = sig.signatory.showDetails && (sig.signatory.name || sig.signatory.role || sig.signatory.date);
   const baseHeight = hasDetails ? 240 : 160;
 
   canvas.width = baseWidth;
@@ -106,7 +106,9 @@ export async function renderCompositeSignaturePng(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Error al crear canvas de firma');
 
-  ctx.clearRect(0, 0, baseWidth, baseHeight);
+  // Solid white background (no border) so the stamp covers what is underneath
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, baseWidth, baseHeight);
 
   // 1. Render the signature graphic or text
   if (sig.dataUrl) {
@@ -181,7 +183,6 @@ export async function renderCompositeSignaturePng(
     }
 
     const extraLineParts: string[] = [];
-    if (sig.signatory.idNumber) extraLineParts.push(`ID: ${sig.signatory.idNumber}`);
     if (sig.signatory.date) extraLineParts.push(`Fecha: ${sig.signatory.date}`);
 
     if (extraLineParts.length > 0) {

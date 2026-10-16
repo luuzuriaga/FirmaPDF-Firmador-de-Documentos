@@ -224,7 +224,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
         <div className="hidden sm:flex items-center gap-2 text-slate-500">
           <Layers className="w-3.5 h-3.5" />
           <span>
-            {currentPageSignatures.length} de 3 firmas en esta página
+            {currentPageSignatures.length} de {signatures.length} firmas en esta página
           </span>
         </div>
 
@@ -301,6 +301,11 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
               1: { border: 'border-blue-600', bg: 'bg-blue-600', text: 'text-blue-700' },
               2: { border: 'border-indigo-600', bg: 'bg-indigo-600', text: 'text-indigo-700' },
               3: { border: 'border-emerald-600', bg: 'bg-emerald-600', text: 'text-emerald-700' },
+              4: { border: 'border-amber-600', bg: 'bg-amber-600', text: 'text-amber-700' },
+              5: { border: 'border-rose-600', bg: 'bg-rose-600', text: 'text-rose-700' },
+              6: { border: 'border-violet-600', bg: 'bg-violet-600', text: 'text-violet-700' },
+              7: { border: 'border-cyan-600', bg: 'bg-cyan-600', text: 'text-cyan-700' },
+              8: { border: 'border-fuchsia-600', bg: 'bg-fuchsia-600', text: 'text-fuchsia-700' },
             };
             const theme = badgeColorMap[sig.id] || badgeColorMap[1];
 
@@ -311,7 +316,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className={`absolute group cursor-move transition-shadow ${
                   isSelected
-                    ? `ring-2 ring-offset-2 ring-slate-900 shadow-xl z-30`
+                    ? `ring-2 ring-slate-200 shadow-lg z-30`
                     : `hover:shadow-md z-20`
                 } ${isDragging ? 'opacity-90 scale-[1.01]' : ''}`}
                 style={{
@@ -321,7 +326,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                 }}
               >
                 {/* Stamp Card Frame */}
-                <div className="relative border border-slate-300 hover:border-slate-400 bg-white/95 backdrop-blur-xs rounded-md shadow-xs p-2 text-center overflow-hidden">
+                <div className="relative border border-slate-100 bg-white rounded-md shadow-xs p-2 text-center overflow-hidden">
                   {/* Top Bar with Badge & Quick Actions */}
                   <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100 text-[10px]">
                     <div className="flex items-center gap-1 font-semibold truncate text-slate-700">
@@ -387,14 +392,9 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                           {sig.signatory.role}
                         </div>
                       )}
-                      {(sig.signatory.idNumber || sig.signatory.date) && (
+                      {sig.signatory.date && (
                         <div className="text-slate-400 text-[8px] truncate mt-0.5">
-                          {[
-                            sig.signatory.idNumber && `ID: ${sig.signatory.idNumber}`,
-                            sig.signatory.date && `F: ${sig.signatory.date}`,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
+                          Fecha: {sig.signatory.date}
                         </div>
                       )}
                     </div>

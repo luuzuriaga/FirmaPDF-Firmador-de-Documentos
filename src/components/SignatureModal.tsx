@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Calendar,
   Briefcase,
-  IdCard,
 } from 'lucide-react';
 import { SignatureConfig, SignatureType } from '../types/pdf';
 import { SignatureCanvas } from './SignatureCanvas';
@@ -40,7 +39,6 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
   const [signatory, setSignatory] = useState({
     name: signature.signatory.name || '',
     role: signature.signatory.role || '',
-    idNumber: signature.signatory.idNumber || '',
     date: signature.signatory.date || new Date().toISOString().split('T')[0],
     showDetails: signature.signatory.showDetails ?? true,
   });
@@ -347,22 +345,6 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
                       setSignatory({ ...signatory, role: e.target.value })
                     }
                     placeholder="Ej: Gerente General"
-                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
-                    <IdCard className="w-3 h-3 text-slate-400" />
-                    DNI / Identificación
-                  </label>
-                  <input
-                    type="text"
-                    value={signatory.idNumber}
-                    onChange={(e) =>
-                      setSignatory({ ...signatory, idNumber: e.target.value })
-                    }
-                    placeholder="Ej: DNI 0928144-B"
                     className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
                   />
                 </div>
