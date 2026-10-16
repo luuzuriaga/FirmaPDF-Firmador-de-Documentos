@@ -5,10 +5,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock,
-  Download,
   Info,
   Plus,
-  RefreshCw,
   Signature,
   Sparkles,
   Trash2,
@@ -34,8 +32,6 @@ interface SignatureSidebarProps {
   onLoadPresets: () => void;
   onAddSignature: () => void;
   onRemoveSignature: (sig: SignatureConfig) => void;
-  onDownload: () => void;
-  isDownloading: boolean;
 }
 
 /** "Uchumarca · Residente de Obra" -> "Residente de Obra" */
@@ -70,8 +66,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onLoadPresets,
   onAddSignature,
   onRemoveSignature,
-  onDownload,
-  isDownloading,
 }) => {
   // Inline form to name a new obra
   const [newObraName, setNewObraName] = useState<string | null>(null);
@@ -421,27 +415,6 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
         </div>
       </div>
 
-      {/* Download */}
-      <div className="mt-auto">
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={isDownloading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-semibold text-sm rounded-lg shadow-sm transition-all disabled:opacity-60 cursor-pointer"
-        >
-          {isDownloading ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>Incrustando firmas en PDF...</span>
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" />
-              <span>Descargar PDF firmado</span>
-            </>
-          )}
-        </button>
-      </div>
     </aside>
   );
 };

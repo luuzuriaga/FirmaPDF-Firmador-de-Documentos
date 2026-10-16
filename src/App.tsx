@@ -308,6 +308,9 @@ export default function App() {
     });
   };
 
+  // The download shows up once the obra has a signature to stamp
+  const canDownload = obraSignatures.some(hasSignatureContent);
+
   // Header progress: 1 load, 2 configure the obra's signatures, 3 place them
   const currentStep = !pdfBytes
     ? 1
@@ -359,10 +362,10 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       {/* Top bar: brand, progress steps and the document action */}
-      <header className="flex items-center justify-between gap-6 px-4 sm:px-8 py-3 bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="flex items-center justify-between gap-3 sm:gap-6 px-4 sm:px-8 py-3 bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
           <ValcerLogo className="w-9 h-9" />
-          <span className="text-xl font-bold tracking-tight text-slate-900">
+          <span className="hidden sm:inline text-xl font-bold tracking-tight text-slate-900">
             FirmaPDF Valcer
           </span>
         </div>
@@ -411,10 +414,32 @@ export default function App() {
         </nav>
 
         <div className="flex items-center gap-3 shrink-0">
+          {pdfBytes && canDownload && (
+            <button
+              type="button"
+              onClick={handleDownloadSignedPdf}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 active:bg-blue-900 rounded-lg shadow-md shadow-blue-700/25 ring-4 ring-blue-100 transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
+            >
+              {isDownloading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Generando PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>
+                    Descargar<span className="hidden sm:inline"> PDF firmado</span>
+                  </span>
+                </>
+              )}
+            </button>
+          )}
           {pdfBytes ? (
-            <label className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
+            <label title="Cambiar PDF" className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
               <FileText className="w-4 h-4" />
-              <span>Cambiar PDF</span>
+              <span className="hidden sm:inline">Cambiar PDF</span>
               <input
                 type="file"
                 accept=".pdf,application/pdf"
@@ -491,8 +516,6 @@ export default function App() {
               onLoadPresets={handleLoadPresets}
               onAddSignature={handleAddSignature}
               onRemoveSignature={handleRemoveSignature}
-              onDownload={handleDownloadSignedPdf}
-              isDownloading={isDownloading}
             />
 
             {/* Document Canvas Viewer */}
