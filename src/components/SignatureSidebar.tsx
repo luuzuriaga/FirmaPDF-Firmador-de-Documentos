@@ -77,7 +77,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   const activeObraName = obras.find((o) => o.id === activeObra)?.name ?? '';
 
   return (
-    <aside className="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs shrink-0">
+    <aside className="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-4 sm:gap-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs shrink-0">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
@@ -403,7 +403,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
       </section>
 
       {/* Hint */}
-      <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
+      <div className="hidden lg:flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
         <Info className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-blue-800">

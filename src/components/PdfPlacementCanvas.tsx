@@ -68,7 +68,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
         const containerWidth = containerRef.current.clientWidth || 700;
         // Base width calculation bounded by zoom
         const targetWidth = Math.min(
-          Math.max(containerWidth - 64, 480),
+          Math.max(containerWidth - (containerWidth < 640 ? 24 : 64), 240),
           1200
         ) * (zoomLevel / 100);
 
@@ -104,7 +104,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
       if (containerRef.current && canvasRef.current && pdfBytes) {
         const containerWidth = containerRef.current.clientWidth || 700;
         const targetWidth = Math.min(
-          Math.max(containerWidth - 64, 480),
+          Math.max(containerWidth - (containerWidth < 640 ? 24 : 64), 240),
           1200
         ) * (zoomLevel / 100);
         renderPdfPageToCanvas(
@@ -191,7 +191,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full bg-slate-100/80 rounded-xl border border-slate-200 overflow-hidden shadow-xs"
+      className="flex flex-col lg:h-full bg-slate-100/80 rounded-xl border border-slate-200 overflow-hidden shadow-xs"
     >
       {/* Top Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-white border-b border-slate-200 text-xs">
@@ -261,7 +261,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
 
       {/* Main Document Viewport */}
       <div
-        className="flex-1 overflow-auto p-4 sm:p-8 flex items-start justify-center relative select-none"
+        className="flex-1 overflow-x-auto lg:overflow-y-auto p-3 sm:p-8 flex items-start justify-center relative select-none"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
@@ -296,6 +296,9 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
             const sigWidthPx = (sig.widthPercent / 100) * renderDimensions.width;
             const sigLeftPx = (sig.xPercent / 100) * renderDimensions.width;
             const sigTopPx = (sig.yPercent / 100) * renderDimensions.height;
+            // Small stamps (e.g. on phones) show just the signature, without
+            // the title bar
+            const compact = sigWidthPx < 140;
 
             const badgeColorMap: Record<number, { border: string; bg: string; text: string }> = {
               1: { border: 'border-blue-600', bg: 'bg-blue-600', text: 'text-blue-700' },
@@ -314,7 +317,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                 key={sig.id}
                 onPointerDown={(e) => handlePointerDown(e, sig)}
                 onClick={(e) => e.stopPropagation()}
-                className={`absolute group cursor-move transition-shadow ${
+                className={`absolute group cursor-move touch-none transition-shadow ${
                   isSelected
                     ? `ring-2 ring-slate-200 shadow-lg z-30`
                     : `hover:shadow-md z-20`
@@ -326,9 +329,17 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                 }}
               >
                 {/* Stamp Card Frame */}
-                <div className="relative border border-slate-100 bg-white rounded-md shadow-xs p-2 text-center overflow-hidden">
+                <div
+                  className={`relative border border-slate-100 bg-white rounded-md shadow-xs text-center overflow-hidden ${
+                    compact ? 'p-0.5' : 'p-2'
+                  }`}
+                >
                   {/* Top Bar with Badge & Quick Actions */}
-                  <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100 text-[10px]">
+                  <div
+                    className={`items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100 text-[10px] ${
+                      compact ? 'hidden' : 'flex'
+                    }`}
+                  >
                     <div className="flex items-center gap-1 font-semibold truncate text-slate-700">
                       <span
                         className={`w-2 h-2 rounded-full ${theme.bg} shrink-0`}
@@ -355,7 +366,11 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
                   </div>
 
                   {/* Signature Visual (Draw / Type / Upload) */}
-                  <div className="py-1 flex items-center justify-center min-h-[44px]">
+                  <div
+                    className={`flex items-center justify-center ${
+                      compact ? '' : 'py-1 min-h-[44px]'
+                    }`}
+                  >
                     {sig.dataUrl ? (
                       <img
                         src={sig.dataUrl}

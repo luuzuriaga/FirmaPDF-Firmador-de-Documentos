@@ -485,7 +485,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 max-w-[1920px] w-full mx-auto">
+      <main className="flex-1 flex flex-col p-3 sm:p-6 max-w-[1920px] w-full mx-auto">
         {!pdfBytes ? (
           /* Step 1: Upload Dropzone & Onboarding */
           <div className="flex-1 flex items-center justify-center py-6">
@@ -519,7 +519,7 @@ export default function App() {
             />
 
             {/* Document Canvas Viewer */}
-            <div className="flex-1 flex flex-col min-h-[500px]">
+            <div className="flex-1 flex flex-col min-w-0 lg:min-h-[500px]">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 text-xs">
                 <div className="flex items-center gap-2 text-slate-700 truncate max-w-md">
                   <FileText className="w-4 h-4 text-slate-500 shrink-0" />

@@ -72,7 +72,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
           Firmar Documentos PDF por Obra
         </h1>
         <p className="text-sm text-slate-600 max-w-lg mx-auto">
-          Carga tu documento en segundos, elige la obra, personaliza sus 2 firmas (dibujo, tipografía o imagen) y descárgalo listo con total validez.
+          Carga tu documento en segundos, elige la obra, personaliza sus firmas (dibujo, tipografía o imagen) y descárgalo listo con total validez.
         </p>
       </div>
 
