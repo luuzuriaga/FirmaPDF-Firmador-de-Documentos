@@ -69,7 +69,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
         // Base width calculation bounded by zoom
         const targetWidth = Math.min(
           Math.max(containerWidth - 64, 480),
-          850
+          1200
         ) * (zoomLevel / 100);
 
         const dims = await renderPdfPageToCanvas(
@@ -105,7 +105,7 @@ export const PdfPlacementCanvas: React.FC<PdfPlacementCanvasProps> = ({
         const containerWidth = containerRef.current.clientWidth || 700;
         const targetWidth = Math.min(
           Math.max(containerWidth - 64, 480),
-          850
+          1200
         ) * (zoomLevel / 100);
         renderPdfPageToCanvas(
           pdfBytes,

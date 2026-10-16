@@ -15,6 +15,7 @@ import {
   Info,
   HelpCircle,
   FileSignature,
+  Check,
 } from 'lucide-react';
 import { DEFAULT_OBRAS, Obra, ObraId, SignatureConfig } from './types/pdf';
 import {
@@ -39,6 +40,19 @@ import { UploadDropzone } from './components/UploadDropzone';
 import { PdfPlacementCanvas } from './components/PdfPlacementCanvas';
 import { SignatureSidebar } from './components/SignatureSidebar';
 import { SignatureModal } from './components/SignatureModal';
+
+const STEPS = ['Cargar PDF', 'Elegir obra y firmas', 'Posicionar y descargar'];
+
+/** Valcer's mark: nested blue diamonds */
+function ValcerLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
+      <path d="M20 2 38 20 20 38 2 20Z" fill="#1e3a8a" />
+      <path d="M20 8.5 31.5 20 20 31.5 8.5 20Z" fill="#ffffff" />
+      <path d="M20 13 27 20 20 27 13 20Z" fill="#2563eb" />
+    </svg>
+  );
+}
 
 export default function App() {
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
@@ -294,6 +308,13 @@ export default function App() {
     });
   };
 
+  // Header progress: 1 load, 2 configure the obra's signatures, 3 place them
+  const currentStep = !pdfBytes
+    ? 1
+    : obraSignatures.length === 0 || !obraSignatures.every(hasSignatureContent)
+      ? 2
+      : 3;
+
   // Final Stamp and Download
   const handleDownloadSignedPdf = async () => {
     if (!pdfBytes) return;
@@ -337,104 +358,85 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
-      {/* Top Bar Contract: Zone 1 (Brand) — Zone 2 (Clean single line nav links) — Zone 3 (Primary Action) */}
-      <header className="flex items-center justify-between gap-8 px-4 sm:px-8 py-3.5 bg-white border-b border-slate-200 sticky top-0 z-40">
-        {/* Zone 1: Single text element wordmark */}
-        <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
-            <FileSignature className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-base font-bold tracking-tight text-slate-900">
+      {/* Top bar: brand, progress steps and the document action */}
+      <header className="flex items-center justify-between gap-6 px-4 sm:px-8 py-3 bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
+          <ValcerLogo className="w-9 h-9" />
+          <span className="text-xl font-bold tracking-tight text-slate-900">
             FirmaPDF Valcer
           </span>
         </div>
 
-        {/* Zone 2: Navigation / Process indicators (single line) */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-500 whitespace-nowrap shrink-0">
-          <span
-            className={
-              !pdfBytes
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-500 hover:text-slate-800'
-            }
-          >
-            1. Cargar PDF
-          </span>
-          <span aria-hidden="true" className="text-slate-300">
-            ·
-          </span>
-          <span
-            className={
-              pdfBytes
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400'
-            }
-          >
-            2. Elegir Obra y Firmas
-          </span>
-          <span aria-hidden="true" className="text-slate-300">
-            ·
-          </span>
-          <span
-            className={
-              pdfBytes
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400'
-            }
-          >
-            3. Posicionar y Descargar
-          </span>
+        <nav
+          aria-label="Progreso"
+          className="hidden md:flex items-center gap-3 text-sm whitespace-nowrap"
+        >
+          {STEPS.map((label, i) => {
+            const step = i + 1;
+            const state =
+              step < currentStep ? 'done' : step === currentStep ? 'current' : 'todo';
+            return (
+              <React.Fragment key={label}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="w-8 h-px bg-slate-200" />
+                )}
+                <span
+                  className="flex items-center gap-2"
+                  aria-current={state === 'current' ? 'step' : undefined}
+                >
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      state === 'done'
+                        ? 'bg-blue-50 text-blue-700'
+                        : state === 'current'
+                          ? 'bg-blue-700 text-white'
+                          : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {state === 'done' ? <Check className="w-3.5 h-3.5" /> : step}
+                  </span>
+                  <span
+                    className={
+                      state === 'current'
+                        ? 'font-semibold text-slate-900'
+                        : 'text-slate-500'
+                    }
+                  >
+                    {step}. {label}
+                  </span>
+                </span>
+              </React.Fragment>
+            );
+          })}
         </nav>
 
-        {/* Zone 3: 1 primary action */}
         <div className="flex items-center gap-3 shrink-0">
           {pdfBytes ? (
-            <div className="flex items-center gap-2">
-              <label className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>Cambiar PDF</span>
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) {
-                      f.arrayBuffer().then((buf) =>
-                        handleFileLoaded(new Uint8Array(buf), f.name)
-                      );
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={handleDownloadSignedPdf}
-                disabled={isDownloading}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
-              >
-                {isDownloading ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Generando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Descargar PDF</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <label className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
+              <FileText className="w-4 h-4" />
+              <span>Cambiar PDF</span>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    f.arrayBuffer().then((buf) =>
+                      handleFileLoaded(new Uint8Array(buf), f.name)
+                    );
+                  }
+                }}
+                className="hidden"
+              />
+            </label>
           ) : (
             <button
               type="button"
               onClick={handleLoadSamplePdf}
               disabled={isLoadingPdf}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <Sparkles className="w-4 h-4 text-amber-600" />
               <span>Ver ejemplo</span>
             </button>
           )}
@@ -458,7 +460,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col p-4 sm:p-6 max-w-7xl w-full mx-auto">
+      <main className="flex-1 flex flex-col p-4 sm:p-6 max-w-[1920px] w-full mx-auto">
         {!pdfBytes ? (
           /* Step 1: Upload Dropzone & Onboarding */
           <div className="flex-1 flex items-center justify-center py-6">
@@ -540,7 +542,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 bg-white">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
             FirmaPDF Valcer · Estampado de firmas por obra
           </span>
