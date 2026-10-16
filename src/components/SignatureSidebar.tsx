@@ -88,7 +88,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
             Obra y firmas
           </h2>
           <p className="text-sm text-slate-500">
-            Selecciona la obra para cargar sus firmas.
+            Cada obra tiene sus propias firmas.
           </p>
         </div>
       </div>
@@ -99,7 +99,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
           htmlFor="obra-select"
           className="block text-sm font-medium text-slate-800 mb-1.5"
         >
-          Obra
+          Selecciona la obra
         </label>
         <div className="relative">
           <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
