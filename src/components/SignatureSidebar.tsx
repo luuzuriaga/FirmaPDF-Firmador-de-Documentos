@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlignHorizontalDistributeCenter,
   Building2,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
   Clock,
   Plus,
   Signature,
@@ -60,6 +61,8 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onRemoveSignature,
 }) => {
   const activeObraName = OBRAS.find((o) => o.id === activeObra)?.name ?? '';
+  // Only the signature being configured shows its preview and controls
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   return (
     <aside className="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-4 sm:gap-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs shrink-0">
@@ -125,100 +128,113 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
             const hasSignature = !!sig.dataUrl || !!sig.textValue;
             const label = signatureLabel(sig);
 
+            const isExpanded = expandedId === sig.id;
+
             return (
               <div
                 key={sig.id}
                 onClick={() => onSelectSignature(sig.id)}
-                className={`p-3.5 rounded-xl border bg-white transition-all cursor-pointer ${
+                className={`p-3 rounded-xl border bg-white transition-all cursor-pointer ${
                   isSelected
                     ? 'border-blue-300 ring-2 ring-blue-100 shadow-xs'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {/* Who signs and status */}
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-full bg-slate-100 text-slate-700 text-sm font-bold flex items-center justify-center shrink-0">
+                {/* Who signs, status and the configure toggle */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 text-sm font-bold flex items-center justify-center shrink-0">
                     {initials(label)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-900 leading-snug">
-                        {label}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveSignature(sig);
-                        }}
-                        className="p-1 -mt-0.5 -mr-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors shrink-0"
-                        title="Eliminar firma"
-                        aria-label={`Eliminar ${sig.title}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">
-                      {sig.signatory.name || activeObraName}
+                    <p className="text-sm font-semibold text-slate-900 leading-snug truncate">
+                      {label}
                     </p>
-                    <span
-                      className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full border ${
-                        hasSignature
-                          ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                          : 'text-amber-700 bg-amber-50 border-amber-200'
+                    <p
+                      className={`flex items-center gap-1 text-xs truncate ${
+                        hasSignature ? 'text-emerald-700' : 'text-amber-700'
                       }`}
                     >
                       {hasSignature ? (
-                        <CheckCircle2 className="w-3 h-3" />
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
                       ) : (
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3 shrink-0" />
                       )}
-                      {hasSignature ? 'Configurada' : 'Pendiente de configurar'}
-                    </span>
+                      <span className="truncate">
+                        {hasSignature ? 'Configurada' : 'Pendiente de configurar'}
+                      </span>
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectSignature(sig.id);
+                      // Nothing to adjust yet: go straight to the editor
+                      if (!hasSignature) {
+                        setExpandedId(sig.id);
+                        onOpenEditModal(sig);
+                        return;
+                      }
+                      setExpandedId(isExpanded ? null : sig.id);
+                    }}
+                    aria-expanded={isExpanded}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors shrink-0 cursor-pointer ${
+                      isExpanded
+                        ? 'text-white bg-blue-700 border-blue-700 hover:bg-blue-800'
+                        : 'text-blue-700 bg-white border-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span>Configurar</span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
+                  </button>
                 </div>
 
-                {/* Preview of the configured signature */}
-                {hasSignature && (
-                  <div className="mt-3 h-16 bg-white border border-slate-200 rounded-lg p-1.5 flex items-center justify-center overflow-hidden">
-                    {sig.dataUrl ? (
-                      <img
-                        src={sig.dataUrl}
-                        alt={sig.title}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <span
-                        className="text-xl leading-tight select-none truncate"
-                        style={{
-                          fontFamily: sig.fontFamily || 'Dancing Script',
-                          color: sig.color || '#0f172a',
-                        }}
-                      >
-                        {sig.textValue}
-                      </span>
+                {isExpanded && (
+                  <div onClick={(e) => e.stopPropagation()} className="cursor-default">
+                    {sig.signatory.name && (
+                      <p className="mt-2 text-xs text-slate-500 truncate">
+                        {sig.signatory.name}
+                      </p>
                     )}
-                  </div>
-                )}
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenEditModal(sig);
-                  }}
-                  className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 border border-blue-600 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Signature className="w-4 h-4" />
-                  <span>{hasSignature ? 'Editar firma' : 'Configurar firma'}</span>
-                </button>
+                    {/* Preview of the configured signature */}
+                    {hasSignature && (
+                      <div className="mt-3 h-16 bg-white border border-slate-200 rounded-lg p-1.5 flex items-center justify-center overflow-hidden">
+                        {sig.dataUrl ? (
+                          <img
+                            src={sig.dataUrl}
+                            alt={sig.title}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <span
+                            className="text-xl leading-tight select-none truncate"
+                            style={{
+                              fontFamily: sig.fontFamily || 'Dancing Script',
+                              color: sig.color || '#0f172a',
+                            }}
+                          >
+                            {sig.textValue}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                {/* Placement controls, only for the selected signature */}
-                {isSelected && hasSignature && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-3 gap-y-2 text-xs"
-                  >
+                    <button
+                      type="button"
+                      onClick={() => onOpenEditModal(sig)}
+                      className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-blue-700 bg-white hover:bg-blue-50 border border-blue-600 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Signature className="w-4 h-4" />
+                      <span>{hasSignature ? 'Cambiar firma' : 'Subir firma'}</span>
+                    </button>
+                    {/* Placement controls */}
+                    {hasSignature && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                     <div>
                       <span className="text-slate-500 block mb-1">Página</span>
                       <select
@@ -282,6 +298,20 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
                           </button>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                    )}
+
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onRemoveSignature(sig)}
+                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                        aria-label={`Eliminar ${sig.title}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Eliminar firma</span>
+                      </button>
                     </div>
                   </div>
                 )}
