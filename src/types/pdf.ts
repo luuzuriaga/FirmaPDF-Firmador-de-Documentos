@@ -7,9 +7,15 @@ export interface SignatoryInfo {
 
 export type SignatureType = 'draw' | 'type' | 'upload';
 
-export type ObraId = 'tayamarca' | 'uchumarca' | 'huancabamba' | 'valcer';
+export type ObraId = string;
 
-export const OBRAS: { id: ObraId; name: string }[] = [
+export interface Obra {
+  id: ObraId;
+  name: string;
+}
+
+/** Obras the app starts with; users can add or remove their own */
+export const DEFAULT_OBRAS: Obra[] = [
   { id: 'tayamarca', name: 'Tayamarca' },
   { id: 'uchumarca', name: 'Uchumarca' },
   { id: 'huancabamba', name: 'Huancabamba' },

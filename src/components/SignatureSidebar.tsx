@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PenTool,
   Sliders,
@@ -13,13 +13,17 @@ import {
   RefreshCw,
   Plus,
   Trash2,
+  X,
 } from 'lucide-react';
-import { ObraId, OBRAS, SignatureConfig } from '../types/pdf';
+import { Obra, ObraId, SignatureConfig } from '../types/pdf';
 
 interface SignatureSidebarProps {
   signatures: SignatureConfig[];
+  obras: Obra[];
   activeObra: ObraId;
   onChangeObra: (obra: ObraId) => void;
+  onAddObra: (name: string) => void;
+  onRemoveObra: (obra: ObraId) => void;
   numPages: number;
   currentPage: number;
   selectedSignatureId: number | null;
@@ -36,8 +40,11 @@ interface SignatureSidebarProps {
 
 export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   signatures,
+  obras,
   activeObra,
   onChangeObra,
+  onAddObra,
+  onRemoveObra,
   numPages,
   currentPage,
   selectedSignatureId,
@@ -51,6 +58,15 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
   onDownload,
   isDownloading,
 }) => {
+  // Inline form to name a new obra
+  const [newObraName, setNewObraName] = useState<string | null>(null);
+  const submitNewObra = () => {
+    const name = (newObraName ?? '').trim();
+    if (name) onAddObra(name);
+    setNewObraName(null);
+  };
+  const activeObraName = obras.find((o) => o.id === activeObra)?.name;
+
   const colorMap: Record<
     number,
     { border: string; bg: string; text: string; lightBg: string }
@@ -129,7 +145,7 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
 
         {/* Obra selector */}
         <div className="mt-3 flex flex-wrap gap-1 p-1 bg-slate-100 rounded-lg">
-          {OBRAS.map((obra) => (
+          {obras.map((obra) => (
             <button
               key={obra.id}
               type="button"
@@ -143,7 +159,69 @@ export const SignatureSidebar: React.FC<SignatureSidebarProps> = ({
               {obra.name}
             </button>
           ))}
+          {newObraName === null && (
+            <button
+              type="button"
+              onClick={() => setNewObraName('')}
+              className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-white/70 rounded-md transition-colors cursor-pointer"
+              title="Agregar una obra"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Obra</span>
+            </button>
+          )}
         </div>
+
+        {newObraName !== null && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitNewObra();
+            }}
+            className="mt-2 flex items-center gap-1.5"
+          >
+            <input
+              autoFocus
+              value={newObraName}
+              onChange={(e) => setNewObraName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setNewObraName(null);
+              }}
+              placeholder="Nombre de la obra"
+              aria-label="Nombre de la nueva obra"
+              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md bg-white text-slate-900 focus:outline-none focus:border-slate-500"
+            />
+            <button
+              type="submit"
+              disabled={!newObraName.trim()}
+              className="px-2.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md disabled:opacity-40 cursor-pointer"
+            >
+              Agregar
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewObraName(null)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md"
+              aria-label="Cancelar"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        )}
+
+        {activeObraName && (
+          <div className="mt-1.5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onRemoveObra(activeObra)}
+              title={`Eliminar la obra ${activeObraName}`}
+              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Eliminar esta obra</span>
+            </button>
+          </div>
+        )}
 
         {/* Quick alignment action */}
         <button

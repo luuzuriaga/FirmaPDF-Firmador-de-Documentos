@@ -16,14 +16,19 @@ import {
   HelpCircle,
   FileSignature,
 } from 'lucide-react';
-import { ObraId, OBRAS, SignatureConfig } from './types/pdf';
+import { DEFAULT_OBRAS, Obra, ObraId, SignatureConfig } from './types/pdf';
 import {
   getPresetSignatures,
   groupSlot,
   GROUP_Y_PERCENT,
   hasSignatureContent,
 } from './utils/sampleSignatures';
-import { loadSignatures, saveSignatures } from './utils/signatureStorage';
+import {
+  loadObras,
+  loadSignatures,
+  saveObras,
+  saveSignatures,
+} from './utils/signatureStorage';
 import { loadImageAsDataUrl } from './utils/imageUtils';
 import {
   getPdfInfo,
@@ -48,15 +53,25 @@ export default function App() {
   const [signatures, setSignatures] = useState<SignatureConfig[]>(
     getPresetSignatures
   );
+  const [obras, setObras] = useState<Obra[]>(DEFAULT_OBRAS);
   // Nothing is saved until the stored signatures are read, so the presets
   // never overwrite them
   const [signaturesLoaded, setSignaturesLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    loadSignatures(getPresetSignatures()).then((loaded) => {
+    Promise.all([
+      loadSignatures(getPresetSignatures()),
+      loadObras(DEFAULT_OBRAS),
+    ]).then(([loaded, loadedObras]) => {
       if (cancelled) return;
       setSignatures(loaded);
+      setObras(loadedObras);
+      if (loadedObras.length > 0) {
+        const first = loadedObras[0].id;
+        setActiveObra(first);
+        setSelectedSignatureId(loaded.find((s) => s.obra === first)?.id ?? null);
+      }
       setSignaturesLoaded(true);
 
       // Load local signature images (public/firmas/) into empty slots; on
@@ -90,17 +105,48 @@ export default function App() {
     if (!signaturesLoaded) return;
     saveSignatures(signatures).then((ok) => setStorageFailed(!ok));
   }, [signatures, signaturesLoaded]);
+  useEffect(() => {
+    if (!signaturesLoaded) return;
+    saveObras(obras).then((ok) => setStorageFailed(!ok));
+  }, [obras, signaturesLoaded]);
 
   // Active obra: only its signatures are shown and stamped
-  const [activeObra, setActiveObra] = useState<ObraId>('tayamarca');
+  const [activeObra, setActiveObra] = useState<ObraId>(DEFAULT_OBRAS[0].id);
   const obraSignatures = signatures.filter((s) => s.obra === activeObra);
   const activeObraName =
-    OBRAS.find((o) => o.id === activeObra)?.name ?? activeObra;
+    obras.find((o) => o.id === activeObra)?.name ?? activeObra;
 
   const handleChangeObra = (obra: ObraId) => {
     setActiveObra(obra);
     const first = signatures.find((s) => s.obra === obra);
     setSelectedSignatureId(first ? first.id : null);
+  };
+
+  // New obras start empty; their signatures are added with "Agregar firma"
+  const handleAddObra = (name: string) => {
+    const id = `obra-${Date.now()}`;
+    setObras((prev) => [...prev, { id, name }]);
+    setActiveObra(id);
+    setSelectedSignatureId(null);
+  };
+
+  const handleRemoveObra = (obraId: ObraId) => {
+    const obra = obras.find((o) => o.id === obraId);
+    if (!obra) return;
+    if (
+      !window.confirm(
+        `¿Eliminar la obra "${obra.name}" y todas sus firmas?`
+      )
+    )
+      return;
+    const remaining = obras.filter((o) => o.id !== obraId);
+    setObras(remaining);
+    setSignatures((prev) => prev.filter((s) => s.obra !== obraId));
+    const next = remaining[0]?.id ?? '';
+    setActiveObra(next);
+    setSelectedSignatureId(
+      signatures.find((s) => s.obra === next)?.id ?? null
+    );
   };
 
   // Selected signature for highlighting
@@ -266,7 +312,14 @@ export default function App() {
       const cleanBaseName = pdfName
         ? pdfName.replace(/\.pdf$/i, '')
         : 'documento';
-      const outputFilename = `${cleanBaseName}_firmado_${activeObra}.pdf`;
+      const obraSlug =
+        activeObraName
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || 'obra';
+      const outputFilename = `${cleanBaseName}_firmado_${obraSlug}.pdf`;
 
       triggerFileDownload(signedBytes, outputFilename);
 
@@ -421,8 +474,11 @@ export default function App() {
             {/* Sidebar Controls */}
             <SignatureSidebar
               signatures={obraSignatures}
+              obras={obras}
               activeObra={activeObra}
               onChangeObra={handleChangeObra}
+              onAddObra={handleAddObra}
+              onRemoveObra={handleRemoveObra}
               numPages={numPages}
               currentPage={currentPage}
               selectedSignatureId={selectedSignatureId}

@@ -1,4 +1,4 @@
-import { SignatureConfig } from '../types/pdf';
+import { Obra, SignatureConfig } from '../types/pdf';
 
 /**
  * Keeps each user's own signatures (uploaded images, typed text, names,
@@ -11,6 +11,7 @@ import { SignatureConfig } from '../types/pdf';
 const DB_NAME = 'firmapdf';
 const STORE = 'kv';
 const KEY = 'firmas';
+const OBRAS_KEY = 'obras';
 /** First version kept the preset signatures' content in localStorage, by id */
 const LEGACY_KEY = 'firmapdf:firmas:v1';
 
@@ -164,4 +165,32 @@ export async function saveSignatures(
     // Nothing to clean up
   }
   return true;
+}
+
+/** Obras saved in this browser, or the defaults when there are none */
+export async function loadObras(defaults: Obra[]): Promise<Obra[]> {
+  try {
+    const saved = await idbGet<Obra[]>(OBRAS_KEY);
+    if (Array.isArray(saved)) return saved;
+  } catch {
+    // IndexedDB unavailable: use the defaults
+  }
+  return defaults;
+}
+
+/** Resolves false when the browser refused to store them */
+export async function saveObras(obras: Obra[]): Promise<boolean> {
+  try {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(obras, OBRAS_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
