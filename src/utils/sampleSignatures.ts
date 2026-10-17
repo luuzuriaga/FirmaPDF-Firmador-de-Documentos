@@ -30,15 +30,14 @@ interface SignatureSlot {
   textValue?: string;
   fontFamily?: string;
   color?: string;
-  /** image in public/firmas/ (local only, git-ignored), loaded when present */
+  /** image in public/firmas/, loaded when present */
   imagePath?: string;
 }
 
 /**
- * Signature slots per obra. Real signature images live in public/firmas/,
- * which is excluded from git and Vercel: they load automatically only on
- * the local copy. Elsewhere each user uploads them once via "Editar" and
- * they are kept in that browser (see signatureStorage.ts)
+ * Signature slots per obra. Real signature images live in public/firmas/
+ * and load automatically on every device; a signature uploaded via
+ * "Configurar" replaces it in that browser (see signatureStorage.ts)
  */
 const SLOTS: SignatureSlot[] = [
   {

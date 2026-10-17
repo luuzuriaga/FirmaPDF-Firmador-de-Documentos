@@ -8,5 +8,5 @@ coverage/
 !.env.example
 .vercel
 
-# Firmas reales: solo locales, nunca en git ni en Vercel
-public/firmas/
+# Plantilla de prueba: solo local
+public/firmas/plantilla-prueba.pdf
