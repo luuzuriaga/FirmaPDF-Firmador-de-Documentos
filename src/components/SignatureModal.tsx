@@ -44,6 +44,15 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
     showDetails: signature.signatory.showDetails ?? true,
   });
 
+  // The title reads "Obra · Cargo"; only the cargo is edited here
+  const titleParts = signature.title.split(' · ');
+  const obraPrefix = titleParts.length > 1 ? titleParts[0] : '';
+  const defaultLabel = titleParts[titleParts.length - 1];
+  // A just-added signature only has a placeholder label: start blank
+  const [label, setLabel] = useState<string>(
+    /^Firma \d+$/.test(defaultLabel) ? '' : defaultLabel
+  );
+
   if (!isOpen) return null;
 
   const fontOptions = [
@@ -74,14 +83,21 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
   };
 
   const handleSave = () => {
+    const cargo = label.trim() || defaultLabel;
     onSave({
       ...signature,
+      title: obraPrefix ? `${obraPrefix} · ${cargo}` : cargo,
       type: activeTab,
       color,
       dataUrl: activeTab === 'type' ? null : drawDataUrl,
       textValue: activeTab === 'type' ? textValue : '',
       fontFamily,
-      signatory,
+      // The printed role defaults to the cargo when left blank
+      signatory: {
+        ...signatory,
+        name: signatory.name.trim(),
+        role: signatory.role.trim() || label.trim(),
+      },
     });
     onClose();
   };
@@ -98,7 +114,7 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
             />
             <div>
               <h2 className="text-base font-semibold text-slate-900">
-                Personalizar {signature.title}
+                Personalizar {label.trim() || defaultLabel}
               </h2>
               <p className="text-xs text-slate-500">
                 Dibuja tu rúbrica, genera una firma tipográfica o sube un archivo
@@ -115,6 +131,47 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6">
+          {/* Who signs: shown in the list of signatures */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="sig-label"
+                className="flex items-center gap-1 text-xs font-medium text-slate-700 mb-1"
+              >
+                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                Cargo
+              </label>
+              <input
+                id="sig-label"
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="Ej: Residente de Obra"
+                autoFocus={!label}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="sig-name"
+                className="flex items-center gap-1 text-xs font-medium text-slate-700 mb-1"
+              >
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                Nombre
+              </label>
+              <input
+                id="sig-name"
+                type="text"
+                value={signatory.name}
+                onChange={(e) =>
+                  setSignatory({ ...signatory, name: e.target.value })
+                }
+                placeholder="Ej: Ing. Carlos Arismendi"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+          </div>
+
           {/* Method Selector Tabs */}
           <div className="flex items-center p-1 bg-slate-100 rounded-lg">
             <button
@@ -303,7 +360,7 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
                   Datos del Firmante al Pie (Opcional)
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Imprime el nombre, cargo y documento debajo de la rúbrica
+                  Imprime el nombre, cargo y fecha debajo de la rúbrica
                 </p>
               </div>
               <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
@@ -323,24 +380,8 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
-                    <User className="w-3 h-3 text-slate-400" />
-                    Nombre Completo
-                  </label>
-                  <input
-                    type="text"
-                    value={signatory.name}
-                    onChange={(e) =>
-                      setSignatory({ ...signatory, name: e.target.value })
-                    }
-                    placeholder="Ej: Lic. Carlos Arismendi"
-                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
                     <Briefcase className="w-3 h-3 text-slate-400" />
-                    Cargo / Puesto / Rol
+                    Cargo impreso
                   </label>
                   <input
                     type="text"
@@ -348,7 +389,7 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
                     onChange={(e) =>
                       setSignatory({ ...signatory, role: e.target.value })
                     }
-                    placeholder="Ej: Gerente General"
+                    placeholder={label.trim() || 'Ej: Gerente General'}
                     className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900"
                   />
                 </div>
